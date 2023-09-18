@@ -1,2 +1,2 @@
 # bs_scheduler
-PyTorch Dataloader compatible batch size scheduler library
+A PyTorch Dataloader compatible batch size scheduler library
