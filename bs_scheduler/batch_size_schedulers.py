@@ -1,5 +1,6 @@
 # Inspired from https://pytorch.org/docs/stable/_modules/torch/optim/lr_scheduler.html.
-from typing import Callable
+import types
+from typing import Callable, Union
 
 from torch.utils.data import DataLoader
 
@@ -13,14 +14,14 @@ class BSScheduler:
             raise TypeError(f"{type(dataloader).__name__} is not a Dataloader")
         self.dataloader = dataloader
 
-        self._last_bs = None
+        self._last_bs: Union[int, None] = None
         # See https://pytorch.org/docs/stable/_modules/torch/optim/lr_scheduler.html for "with_counter".
+        self.last_epoch: int = 0
 
     def state_dict(self) -> dict:
         """Returns the state of the scheduler as a :class:`dict`.
 
-        It contains an entry for every variable in self.__dict__ which
-        is not the optimizer.
+        It contains an entry for every variable in self.__dict__ which is not the dataloader.
         """
         return {key: value for key, value in self.__dict__.items() if key != 'dataloader'}
 
@@ -28,9 +29,9 @@ class BSScheduler:
         """Loads the schedulers state.
 
         Args:
-            state_dict (dict): scheduler state. Should be an object returned
-                from a call to :meth:`state_dict`.
+            state_dict (dict): scheduler state. Should be an object returned from a call to :meth:`state_dict`.
         """
+        # TODO: Check if we need to update the batch size of the dataloader
         self.__dict__.update(state_dict)
 
     def get_last_bs(self) -> int:
@@ -46,7 +47,13 @@ class BSScheduler:
 
     def step(self):
         # TODO: Documentation + implementation
-        pass
+        # TODO: Check if we need to add warning if called outside of the training loop.
+        # TODO: Check how the dataloader behaves if we change the batch size mid epoch. Write a guideline for this
+        # TODO: Check if changing the batch size needs locking. Because of multiprocessing.
+        self.last_epoch += 1
+        new_bs = self._get_bs()
+        self.set_batch_size(new_bs)
+        self._last_bs = new_bs
 
 
 class LambdaBS(BSScheduler):
@@ -68,4 +75,33 @@ class LambdaBS(BSScheduler):
         >>>     scheduler.step()
     """
     def __init__(self, dataloader: DataLoader, bs_lambda: Callable[[int], int]):
-        pass
+        self.bs_lambda = bs_lambda
+        super().__init__(dataloader)
+
+    def state_dict(self) -> dict:
+        """ Returns the state of the scheduler as a :class:`dict`.
+
+        It contains an entry for every variable in self.__dict__ which is not the dataloader. The batch size lambda
+        function will only be saved if they are callable objects and not if they are functions or lambdas.
+        """
+        state_dict = {key: value for key, value in self.__dict__.items() if key not in ('dataloader', 'bs_lambda')}
+        state_dict['bs_lambda'] = None
+        if not isinstance(self.bs_lambda, types.FunctionType):
+            self.bs_lambda.__dict__.copy()
+        return state_dict
+
+    def load_state_dict(self, state_dict: dict):
+        """Loads the schedulers state.
+
+        Args:
+            state_dict (dict): scheduler state. Should be an object returned from a call to :meth:`state_dict`.
+        """
+        # TODO: Check if we need to update the batch size of the dataloader
+        bs_lambda = state_dict.pop('bs_lambda')
+        self.__dict__.update(state_dict)
+        if bs_lambda is not None:
+            self.bs_lambda.__dict__.update(bs_lambda)
+
+    def _get_bs(self) -> int:
+        # TODO: Check if we need to add warning if called outside of scheduler step.
+        return self.base_bs * self.bs_lambda(self.last_epoch)
