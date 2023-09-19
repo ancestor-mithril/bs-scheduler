@@ -1,3 +1,4 @@
+import torch
 from torchvision import datasets
 from torchvision.transforms import ToTensor
 from torch.utils.data import DataLoader
@@ -36,8 +37,16 @@ def simulate_n_epochs(dataloader, scheduler, epochs):
         scheduler.step()
     return lengths
 
+
 def get_batch_size(dataloader):
-    return len(next(iter(dataloader))[0])
+    data = next(iter(dataloader))
+    if isinstance(data, torch.Tensor):
+        return len(data)
+    if isinstance(data, (list, tuple)):
+        return len(data[0])
+    if isinstance(data, dict):
+        return len(next(iter(data.values())))
+    raise TypeError(f"Unknown type {type(data).__name__}")
 
 
 def get_batch_sizes_across_epochs(dataloader, scheduler, epochs):

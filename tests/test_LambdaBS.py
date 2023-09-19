@@ -28,7 +28,7 @@ class TestLambdaBS(unittest.TestCase):
         real, inferred = iterate(dataloader)
         self.assert_real_eq_inferred(real, inferred)
 
-        dataloader.batch_sampler.batch_size = 32
+        dataloader.batch_sampler.batch_size = 256
         real, inferred = iterate(dataloader)
         self.assert_real_eq_inferred(real, inferred)
 
