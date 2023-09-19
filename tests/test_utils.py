@@ -1,3 +1,6 @@
+import math
+import unittest
+
 import torch
 from torchvision import datasets
 from torchvision.transforms import ToTensor
@@ -55,3 +58,23 @@ def get_batch_sizes_across_epochs(dataloader, scheduler, epochs):
         batch_sizes.append(get_batch_size(dataloader))
         scheduler.step()
     return batch_sizes
+
+
+def clip(x, min_x, max_x):
+    return min(max(x, min_x), max_x)
+
+
+class BSTest(unittest.TestCase):
+    def assert_real_eq_inferred(self, real, inferred):
+        self.assertEqual(real, inferred, "Dataloader __len__ does not return the real length. The real length should "
+                                         "always be equal to the inferred length except for Iterable Datasets for "
+                                         "which the __len__ could be inaccurate.")
+
+    def assert_real_eq_expected(self, real, expected):
+        self.assertEqual(real, expected, f"Expected {expected}, got {real}")
+
+    @staticmethod
+    def compute_epoch_lengths(batch_sizes, dataset_len, drop_last):
+        if drop_last:
+            return [dataset_len // bs for bs in batch_sizes]
+        return [int(math.ceil(dataset_len / bs)) for bs in batch_sizes]
