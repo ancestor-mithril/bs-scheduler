@@ -29,23 +29,27 @@ class BSScheduler:
             if not hasattr(self.dataloader.dataset, "get_batch_size"):
                 # TODO: Validate the error name
                 raise KeyError("We require our users to implement a Callable[[], int] method named `get_batch_size` in "
-                               "their dataset which returns the current batch size.")
+                               "their dataset which returns the current batch size. Please see TODO for examples. ")
 
-        self._last_bs: Union[int, None] = None
         # See https://pytorch.org/docs/stable/_modules/torch/optim/lr_scheduler.html for "with_counter".
         self.last_epoch: int = 0
         self.base_bs: int = self.get_current_batch_size()
+        self._last_bs: int = self.base_bs
 
     def get_current_batch_size(self) -> int:
+        # TODO: Write documentation
         return self.dataloader.dataset.get_batch_size()
 
     def batch_sampler_get_current_batch_size(self) -> int:
+        # TODO: Write documentation
         return self.dataloader.batch_sampler.batch_size
 
     def set_batch_size(self, new_bs: int):
+        # TODO: Write documentation
         self.dataloader.dataset.change_batch_size(new_bs)
 
     def batch_sampler_set_batch_size(self, new_bs: int):
+        # TODO: Write documentation
         self.dataloader.batch_sampler.batch_size = new_bs
 
         # TODO: Read this:
@@ -87,7 +91,7 @@ class BSScheduler:
 
     def get_last_bs(self) -> int:
         """ Return last computed batch size by current scheduler. If called before the first call to :meth:`step`
-        returns None.
+        returns the base batch size.
         """
         # TODO: Check if it better to return dataloader.batch_size
         return self._last_bs
@@ -155,5 +159,5 @@ class LambdaBS(BSScheduler):
             self.bs_lambda.__dict__.update(bs_lambda)
 
     def get_bs(self) -> int:
-        # TODO: Check if we need to add warning if called outside of scheduler step.
+        # TODO: Write documentation
         return int(self.base_bs * self.bs_lambda(self.last_epoch))

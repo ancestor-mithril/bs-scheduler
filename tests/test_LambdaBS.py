@@ -4,14 +4,16 @@ import unittest
 from torch.optim.lr_scheduler import LambdaLR
 
 from bs_scheduler.batch_size_schedulers import LambdaBS
-from tests.test_utils import create_dataloader, dataloader_len, step_n_epochs
+from tests.test_utils import create_dataloader, iterate, simulate_n_epochs, fashion_mnist, \
+    get_batch_sizes_across_epochs
 
 
 class TestLambdaBS(unittest.TestCase):
     def setUp(self):
-        self.batch_size = 64
-        self.dataloader = create_dataloader(batch_size=self.batch_size)
-        self.dataset_len = len(self.dataloader.dataset)
+        self.base_batch_size = 64
+        self.dataset = fashion_mnist()
+        # TODO: Test multiple dataloaders: dataloader with workers, dataloaders with samplers, with drop last and
+        #  without drop last and so on.
 
     def assert_real_eq_inferred(self, real, inferred):
         self.assertEqual(real, inferred, "Dataloader __len__ does not return the real length. The real length should "
@@ -22,24 +24,37 @@ class TestLambdaBS(unittest.TestCase):
         self.assertEqual(real, expected, f"Expected {expected}, got {real}")
 
     def test_sanity(self):
-        real, inferred = dataloader_len(self.dataloader)
+        dataloader = create_dataloader(self.dataset, batch_size=self.base_batch_size)
+        real, inferred = iterate(dataloader)
         self.assert_real_eq_inferred(real, inferred)
 
-        self.dataloader.batch_sampler.batch_size = 32
-        real, inferred = dataloader_len(self.dataloader)
+        dataloader.batch_sampler.batch_size = 32
+        real, inferred = iterate(dataloader)
         self.assert_real_eq_inferred(real, inferred)
 
     def test_dataloader_lengths(self):
+        dataloader = create_dataloader(self.dataset, batch_size=self.base_batch_size)
         fn = lambda epoch: (1 + epoch) ** 1.05
-        self.scheduler = LambdaBS(self.dataloader, fn)
-        n_epochs = 3
+        scheduler = LambdaBS(dataloader, fn)
+        n_epochs = 300
 
-        lengths = step_n_epochs(self.dataloader, self.scheduler, n_epochs)
+        epoch_lengths = simulate_n_epochs(dataloader, scheduler, n_epochs)
 
-        expected_batch_sizes = [int(self.batch_size * fn(epoch)) for epoch in range(n_epochs)]
-        expected_lengths = [int(math.ceil(self.dataset_len / bs)) for bs in expected_batch_sizes]
+        expected_batch_sizes = [int(self.base_batch_size * fn(epoch)) for epoch in range(n_epochs)]
+        expected_lengths = [int(math.ceil(len(self.dataset) / bs)) for bs in expected_batch_sizes]
 
-        self.assert_real_eq_expected(lengths, expected_lengths)
+        self.assert_real_eq_expected(epoch_lengths, expected_lengths)
+
+    def test_dataloader_batch_size(self):
+        dataloader = create_dataloader(self.dataset, batch_size=self.base_batch_size)
+        fn = lambda epoch: 1 + epoch / 20
+        scheduler = LambdaBS(dataloader, fn)
+        n_epochs = 300
+
+        batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
+        expected_batch_sizes = [int(self.base_batch_size * fn(epoch)) for epoch in range(n_epochs)]
+
+        self.assert_real_eq_expected(batch_sizes, expected_batch_sizes)
 
 
 if __name__ == "__main__":
