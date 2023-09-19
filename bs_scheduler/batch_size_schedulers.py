@@ -14,9 +14,60 @@ class BSScheduler:
             raise TypeError(f"{type(dataloader).__name__} is not a Dataloader")
         self.dataloader = dataloader
 
+        if self.dataloader.batch_sampler is not None:
+            self.set_batch_size = self.batch_sampler_set_batch_size
+            self.get_current_batch_size = self.batch_sampler_get_current_batch_size
+        else:
+            # We require the client to implement a "change_batch_size" method and a "get_batch_size" method for their
+            # dataset.
+            if not hasattr(self.dataloader.dataset, "change_batch_size"):
+                # TODO: Validate the error name
+                raise KeyError("The wrapped dataloader does not have a batch sampler because the dataset controls the "
+                               "batch size. To change the batch size after dataloader creation we require our users to "
+                               "implement a Callable[[int],None] method named `change_batch_size` in their dataset "
+                               "which would change the batch size. Please see TODO for examples.")
+            if not hasattr(self.dataloader.dataset, "get_batch_size"):
+                # TODO: Validate the error name
+                raise KeyError("We require our users to implement a Callable[[], int] method named `get_batch_size` in "
+                               "their dataset which returns the current batch size.")
+
         self._last_bs: Union[int, None] = None
         # See https://pytorch.org/docs/stable/_modules/torch/optim/lr_scheduler.html for "with_counter".
         self.last_epoch: int = 0
+        self.base_bs: int = self.get_current_batch_size()
+
+    def get_current_batch_size(self) -> int:
+        return self.dataloader.dataset.get_batch_size()
+
+    def batch_sampler_get_current_batch_size(self) -> int:
+        return self.dataloader.batch_sampler.batch_size
+
+    def set_batch_size(self, new_bs: int):
+        self.dataloader.dataset.change_batch_size(new_bs)
+
+    def batch_sampler_set_batch_size(self, new_bs: int):
+        self.dataloader.batch_sampler.batch_size = new_bs
+
+        # TODO: Read this:
+        # NOTE [ IterableDataset and __len__ ]
+        #
+        # For `IterableDataset`, `__len__` could be inaccurate when one naively
+        # does multi-processing data loading, since the samples will be duplicated.
+        # However, no real use case should be actually using that behavior, so
+        # it should count as a user error. We should generally trust user
+        # code to do the proper thing (e.g., configure each replica differently
+        # in `__iter__`), and give us the correct `__len__` if they choose to
+        # implement it (this will still throw if the dataset does not implement
+        # a `__len__`).
+        #
+        # To provide a further warning, we track if `__len__` was called on the
+        # `DataLoader`, save the returned value in `self._len_called`, and warn
+        # if the iterator ends up yielding more than this number of samples.
+
+        # Cannot statically verify that dataset is Sized
+
+        # TODO: changing self.dataloader.batch_size raises an error. Maybe change the __setattr__ temporarily using
+        #  a weak ref or sth
 
     def state_dict(self) -> dict:
         """Returns the state of the scheduler as a :class:`dict`.
@@ -41,7 +92,7 @@ class BSScheduler:
         # TODO: Check if it better to return dataloader.batch_size
         return self._last_bs
 
-    def _get_bs(self) -> int:
+    def get_bs(self) -> int:
         """ Computes the next batch size. Should not be called explicitly in client code. """
         raise NotImplementedError
 
@@ -51,7 +102,7 @@ class BSScheduler:
         # TODO: Check how the dataloader behaves if we change the batch size mid epoch. Write a guideline for this
         # TODO: Check if changing the batch size needs locking. Because of multiprocessing.
         self.last_epoch += 1
-        new_bs = self._get_bs()
+        new_bs = self.get_bs()
         self.set_batch_size(new_bs)
         self._last_bs = new_bs
 
@@ -62,18 +113,19 @@ class LambdaBS(BSScheduler):
 
     Args:
         dataloader (DataLoader): Wrapped dataloader.
-        bs_lambda: (Callable[[int], int]): A function which computes a multiplicative factor given an integer parameter
-            epoch.
+        bs_lambda: (Callable[[int], float]): A function which computes a multiplicative factor given an integer
+            parameter epoch.
 
     Example:
         >>> dataloader = ...
-        >>> func = lambda epoch: int(100 * 1.05 ** epoch)
+        >>> func = lambda epoch: 1.05 ** epoch
         >>> scheduler = LambdaBS(dataloader, bs_lambda=func)
         >>> for epoch in range(100):
         >>>     train(...)
         >>>     validate(...)
         >>>     scheduler.step()
     """
+
     def __init__(self, dataloader: DataLoader, bs_lambda: Callable[[int], int]):
         self.bs_lambda = bs_lambda
         super().__init__(dataloader)
@@ -102,6 +154,6 @@ class LambdaBS(BSScheduler):
         if bs_lambda is not None:
             self.bs_lambda.__dict__.update(bs_lambda)
 
-    def _get_bs(self) -> int:
+    def get_bs(self) -> int:
         # TODO: Check if we need to add warning if called outside of scheduler step.
-        return self.base_bs * self.bs_lambda(self.last_epoch)
+        return int(self.base_bs * self.bs_lambda(self.last_epoch))
