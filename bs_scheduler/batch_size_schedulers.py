@@ -15,7 +15,9 @@ class BSScheduler:
             raise TypeError(f"{type(dataloader).__name__} is not a Dataloader")
         self.dataloader: DataLoader = dataloader
 
-        self.max_batch_size: int = len(self.dataloader.dataset) if max_batch_size is None else max_batch_size
+        self.max_batch_size: int = len(self.dataloader.dataset)
+        if max_batch_size is not None:
+            self.max_batch_size = min(self.max_batch_size, max_batch_size)
         assert min_batch_size > 0, f"Minimum batch size must be greater than 0, is {min_batch_size}"
         assert min_batch_size <= self.max_batch_size, f"Minimum batch size ({min_batch_size}) must be smaller or equal " \
                                                       f"than maximum batch size ({self.max_batch_size})"
@@ -127,8 +129,8 @@ class LambdaBS(BSScheduler):
         bs_lambda (Callable[[int], float]): A function which computes a multiplicative factor given an integer
             parameter epoch.
         max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
-            in the memory. If None, max_batch_size is set to the lenght of the dataset wrapped by the dataloader.
-            Default: None.
+            in the memory. If None or greate than the lenght of the dataset wrapped by the dataloader, max_batch_size is
+             set to `len(self.dataloader.dataset)`. Default: None.
         min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
 
     Example:
@@ -185,8 +187,8 @@ class MultiplicativeBS(BSScheduler):
         bs_lambda: (Callable[[int], float]): A function which computes a multiplicative factor given an integer
             parameter epoch.
         max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
-            in the memory. If None, max_batch_size is set to the lenght of the dataset wrapped by the dataloader.
-            Default: None.
+            in the memory. If None or greate than the lenght of the dataset wrapped by the dataloader, max_batch_size is
+             set to `len(self.dataloader.dataset)`. Default: None.
         min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
         TODO: Add verbose
 
