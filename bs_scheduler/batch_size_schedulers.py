@@ -1,6 +1,6 @@
 # Inspired from https://pytorch.org/docs/stable/_modules/torch/optim/lr_scheduler.html.
 import types
-from typing import Callable, Union
+from typing import Callable
 
 from torch.utils.data import DataLoader
 
@@ -86,8 +86,8 @@ class BSScheduler:
         Args:
             state_dict (dict): scheduler state. Should be an object returned from a call to :meth:`state_dict`.
         """
-        # TODO: Check if we need to update the batch size of the dataloader
         self.__dict__.update(state_dict)
+        self.set_batch_size(self.get_last_bs())  # Setting the batch size to the last computed batch size.
 
     def get_last_bs(self) -> int:
         """ Return last computed batch size by current scheduler. If called before the first call to :meth:`step`
@@ -113,7 +113,7 @@ class BSScheduler:
 
 class LambdaBS(BSScheduler):
     """ Sets the batch size to the initial batch size times a given function. Unlike torch.optim.lr_scheduler.LambdaLR,
-    there is a single batch size for a given dataloader so only one function should be given.
+    there is a single batch size for a given dataloader so only one function should be passed as a parameter.
 
     Args:
         dataloader (DataLoader): Wrapped dataloader.
@@ -152,12 +152,66 @@ class LambdaBS(BSScheduler):
         Args:
             state_dict (dict): scheduler state. Should be an object returned from a call to :meth:`state_dict`.
         """
-        # TODO: Check if we need to update the batch size of the dataloader
         bs_lambda = state_dict.pop('bs_lambda')
         self.__dict__.update(state_dict)
+        self.set_batch_size(self.get_last_bs())  # Setting the batch size to the last computed batch size.
         if bs_lambda is not None:
             self.bs_lambda.__dict__.update(bs_lambda)
 
     def get_bs(self) -> int:
         # TODO: Write documentation
         return int(self.base_bs * self.bs_lambda(self.last_epoch))
+
+
+class MultiplicativeBS(BSScheduler):
+    """ Multiply the batch size by a factor given in the specified function. Unlike
+    torch.optim.lr_scheduler.MultiplicativeLR, there is a single batch size for a given dataloader so only one function
+    should be passed as a parameter.
+
+    Args:
+        dataloader (DataLoader): Wrapped dataloader.
+        bs_lambda: (Callable[[int], float]): A function which computes a multiplicative factor given an integer
+            parameter epoch.
+        TODO: Add verbose
+
+    Example:
+        >>> dataloader = ...
+        >>> func = lambda epoch: 1.05
+        >>> scheduler = LambdaBS(dataloader, bs_lambda=func)
+        >>> for epoch in range(100):
+        >>>     train(...)
+        >>>     validate(...)
+        >>>     scheduler.step()
+    """
+    def __init__(self, dataloader: DataLoader, bs_lambda: Callable[[int], int]):
+        self.bs_lambda = bs_lambda
+        super().__init__(dataloader)
+
+    def state_dict(self) -> dict:
+        """ Returns the state of the scheduler as a :class:`dict`.
+
+        It contains an entry for every variable in self.__dict__ which is not the dataloader. The batch size lambda
+        function will only be saved if they are callable objects and not if they are functions or lambdas.
+        """
+        state_dict = {key: value for key, value in self.__dict__.items() if key not in ('dataloader', 'bs_lambda')}
+        state_dict['bs_lambda'] = None
+        if not isinstance(self.bs_lambda, types.FunctionType):
+            self.bs_lambda.__dict__.copy()
+        return state_dict
+
+    def load_state_dict(self, state_dict: dict):
+        """Loads the schedulers state.
+
+        Args:
+            state_dict (dict): scheduler state. Should be an object returned from a call to :meth:`state_dict`.
+        """
+        bs_lambda = state_dict.pop('bs_lambda')
+        self.__dict__.update(state_dict)
+        self.set_batch_size(self.get_last_bs())  # Setting the batch size to the last computed batch size.
+        if bs_lambda is not None:
+            self.bs_lambda.__dict__.update(bs_lambda)
+
+    def get_bs(self) -> int:
+        # TODO: Write documentation
+        return int(self.get_current_batch_size() * self.bs_lambda(self.last_epoch))
+
