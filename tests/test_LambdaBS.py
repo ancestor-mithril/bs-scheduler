@@ -14,8 +14,7 @@ class TestLambdaBS(BSTest):
 
     @staticmethod
     def compute_expected_batch_sizes(epochs, base_batch_size, fn, min_batch_size, max_batch_size):
-        return [base_batch_size] + [clip(int(base_batch_size * fn(epoch)), min_batch_size, max_batch_size) for
-                                    epoch in range(1, epochs)]
+        return [clip(int(base_batch_size * fn(epoch)), min_batch_size, max_batch_size) for epoch in range(epochs)]
 
     def test_sanity(self):
         dataloader = create_dataloader(self.dataset, batch_size=self.base_batch_size)

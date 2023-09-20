@@ -8,12 +8,12 @@ __all__ = ['LambdaBS', 'MultiplicativeBS']
 
 
 class BSScheduler:
-    def __init__(self, dataloader: DataLoader, max_batch_size: Union[int, None], min_batch_size: int):
+    def __init__(self, dataloader: DataLoader, max_batch_size: Union[int, None], min_batch_size: int, verbose: bool):
         # TODO: Finalize interface and documentation
-        # TODO: Add verbose
         if not isinstance(dataloader, DataLoader):
             raise TypeError(f"{type(dataloader).__name__} is not a Dataloader")
         self.dataloader: DataLoader = dataloader
+        self.verbose: bool = verbose
 
         self.max_batch_size: int = len(self.dataloader.dataset)
         if max_batch_size is not None:
@@ -41,24 +41,48 @@ class BSScheduler:
                                "their dataset which returns the current batch size. Please see TODO for examples. ")
 
         # See https://pytorch.org/docs/stable/_modules/torch/optim/lr_scheduler.html for "with_counter".
-        self.last_epoch: int = 0
+        self.last_epoch: int = -1
         self.base_bs: int = self.get_current_batch_size()
         self._last_bs: int = self.base_bs
+        self.step()
 
     def get_current_batch_size(self) -> int:
-        # TODO: Write documentation
+        """ Returns the current batch size used by the dataloader as an :class:`int`.
+
+        If the dataloader does not have a batch sampler, namely when the dataset itself controls the batch size, we
+        require our users to implement a :class:`Callable[[], int]` method named :meth:`get_batch_size` in their dataset
+        which returns the current value of the batch size. Otherwise, this method is overriden by
+        :meth:`batch_sampler_get_current_batch_size`.
+        """
         return self.dataloader.dataset.get_batch_size()
 
     def batch_sampler_get_current_batch_size(self) -> int:
-        # TODO: Write documentation
+        """ Returns the current batch size used by the dataloader as an :class:`int`.
+
+        Overrides :meth:`get_current_batch_size` when the dataloader has a batch sampler which controls the batch size.
+        """
         return self.dataloader.batch_sampler.batch_size
 
     def set_batch_size(self, new_bs: int):
-        # TODO: Write documentation
+        """ Sets the new value of the batch size. If the dataloader does not have a batch sampler, namely when the
+        dataset itself controls the batch size, we require our users to implement a :class:`Callable[[int],None]` method
+        named :meth:`change_batch_size` in their dataset which modifies the batch size to the given value. Otherwise,
+        this method is overriden by :meth:`batch_sampler_set_batch_size`.
+
+        Args:
+            new_bs (int): The new batch sizes that needs to be set.
+        """
         self.dataloader.dataset.change_batch_size(new_bs)
 
     def batch_sampler_set_batch_size(self, new_bs: int):
-        # TODO: Write documentation
+        """ Overrides :meth:`set_batch_size` when the dataloader has a batch sampler which controls the batch size.
+
+        (!) Setting dataloader.batch_size raises a :class:`ValueError`. For now, we do not modify it, but we may need
+        to.
+
+        Args:
+            new_bs (int): The new batch sizes that needs to be set.
+        """
         self.dataloader.batch_sampler.batch_size = new_bs
 
         # TODO: Read this:
@@ -102,21 +126,25 @@ class BSScheduler:
         """ Return last computed batch size by current scheduler. If called before the first call to :meth:`step`
         returns the base batch size.
         """
-        # TODO: Check if it better to return dataloader.batch_size
         return self._last_bs
 
     def get_bs(self) -> int:
         """ Computes the next batch size. Should not be called explicitly in client code. """
         raise NotImplementedError
 
+    def print_bs(self, new_bs):
+        if self.verbose:
+            print(f'Adjusting batch size to {new_bs}')
+
     def step(self):
         # TODO: Documentation + implementation
-        # TODO: Check if we need to add warning if called outside of the training loop.
-        # TODO: Check how the dataloader behaves if we change the batch size mid epoch. Write a guideline for this
-        # TODO: Check if changing the batch size needs locking. Because of multiprocessing.
+        # TODO: Check how the dataloader behaves if we change the batch size mid epoch. Write a guideline for this.
+        #  Changing the batch size does not impact batch sizes loaded by workers before the change.
+        # TODO: Check if changing the batch size needs locking. Because of multiprocessing. Normally it should not.
         self.last_epoch += 1
         new_bs = max(min(self.get_bs(), self.max_batch_size), self.min_batch_size)  # Clip new_bs. Clearer than if elif.
         self.set_batch_size(new_bs)
+        self.print_bs(new_bs)
         self._last_bs = new_bs
 
 
@@ -132,6 +160,7 @@ class LambdaBS(BSScheduler):
             in the memory. If None or greate than the lenght of the dataset wrapped by the dataloader, max_batch_size is
              set to `len(self.dataloader.dataset)`. Default: None.
         min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
+        verbose (bool): If ``True``, prints a message to stdout for each update. Default: ``False``.
 
     Example:
         >>> dataloader = ...
@@ -144,9 +173,9 @@ class LambdaBS(BSScheduler):
     """
 
     def __init__(self, dataloader: DataLoader, bs_lambda: Callable[[int], int], max_batch_size: Union[int, None] = None,
-                 min_batch_size: int = 1):
+                 min_batch_size: int = 1, verbose: bool = False):
         self.bs_lambda = bs_lambda
-        super().__init__(dataloader, max_batch_size, min_batch_size)
+        super().__init__(dataloader, max_batch_size, min_batch_size, verbose)
 
     def state_dict(self) -> dict:
         """ Returns the state of the scheduler as a :class:`dict`.
@@ -173,7 +202,10 @@ class LambdaBS(BSScheduler):
             self.bs_lambda.__dict__.update(bs_lambda)
 
     def get_bs(self) -> int:
-        # TODO: Write documentation
+        """ Returns the next batch size as an :class:`int`.
+
+        It is calculated as the initial value of the batch size times the factor returned by `bs_lambda`.
+        """
         return int(self.base_bs * self.bs_lambda(self.last_epoch))
 
 
@@ -190,7 +222,7 @@ class MultiplicativeBS(BSScheduler):
             in the memory. If None or greate than the lenght of the dataset wrapped by the dataloader, max_batch_size is
              set to `len(self.dataloader.dataset)`. Default: None.
         min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
-        TODO: Add verbose
+        verbose (bool): If ``True``, prints a message to stdout for each update. Default: ``False``.
 
     Example:
         >>> dataloader = ...
@@ -203,9 +235,9 @@ class MultiplicativeBS(BSScheduler):
     """
 
     def __init__(self, dataloader: DataLoader, bs_lambda: Callable[[int], int], max_batch_size: Union[int, None] = None,
-                 min_batch_size: int = 1):
+                 min_batch_size: int = 1, verbose: bool = False):
         self.bs_lambda = bs_lambda
-        super().__init__(dataloader, max_batch_size, min_batch_size)
+        super().__init__(dataloader, max_batch_size, min_batch_size, verbose)
 
     def state_dict(self) -> dict:
         """ Returns the state of the scheduler as a :class:`dict`.
@@ -232,5 +264,8 @@ class MultiplicativeBS(BSScheduler):
             self.bs_lambda.__dict__.update(bs_lambda)
 
     def get_bs(self) -> int:
-        # TODO: Write documentation
+        """ Returns the next batch size as an :class:`int`.
+
+        It is calculated as the current value of the batch size times the factor returned by `bs_lambda`.
+        """
         return int(self.get_current_batch_size() * self.bs_lambda(self.last_epoch))
