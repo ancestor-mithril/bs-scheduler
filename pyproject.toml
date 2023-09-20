@@ -1,6 +1,6 @@
 [project]
 name = "bs_scheduler"
-version = "0.0.1"
+version = "0.1.0"
 requires-python = ">=3.9"
 description = "A PyTorch Dataloader compatible batch size scheduler library."
 readme = "README.md"
@@ -29,7 +29,7 @@ keywords = [
     'dynamic batch size'
 ]
 dependencies = [
-    "torch", # TODO: check version in which dataloader was updated
+    "torch>=1.1.0",
 ]
 
 [project.urls]
