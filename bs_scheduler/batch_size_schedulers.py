@@ -114,7 +114,7 @@ class BSScheduler:
         return {key: value for key, value in self.__dict__.items() if key != 'dataloader'}
 
     def load_state_dict(self, state_dict: dict):
-        """Loads the schedulers state.
+        """ Loads the schedulers state.
 
         Args:
             state_dict (dict): scheduler state. Should be an object returned from a call to :meth:`state_dict`.
@@ -123,7 +123,7 @@ class BSScheduler:
         self.set_batch_size(self.get_last_bs())  # Setting the batch size to the last computed batch size.
 
     def get_last_bs(self) -> int:
-        """ Return last computed batch size by current scheduler. If called before the first call to :meth:`step`
+        """ Returns the last computed batch size by current scheduler. If called before the first call to :meth:`step`
         returns the base batch size.
         """
         return self._last_bs
@@ -137,7 +137,7 @@ class BSScheduler:
             print(f'Adjusting batch size to {new_bs}')
 
     def step(self):
-        # TODO: Documentation + implementation
+        # TODO: Documentation
         # TODO: Check how the dataloader behaves if we change the batch size mid epoch. Write a guideline for this.
         #  Changing the batch size does not impact batch sizes loaded by workers before the change.
         # TODO: Check if changing the batch size needs locking. Because of multiprocessing. Normally it should not.
@@ -157,8 +157,8 @@ class LambdaBS(BSScheduler):
         bs_lambda (Callable[[int], float]): A function which computes a multiplicative factor given an integer
             parameter epoch.
         max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
-            in the memory. If None or greate than the lenght of the dataset wrapped by the dataloader, max_batch_size is
-             set to `len(self.dataloader.dataset)`. Default: None.
+            in the memory. If None or greater than the lenght of the dataset wrapped by the dataloader, max_batch_size
+            is set to `len(self.dataloader.dataset)`. Default: None.
         min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
         verbose (bool): If ``True``, prints a message to stdout for each update. Default: ``False``.
 
@@ -219,15 +219,15 @@ class MultiplicativeBS(BSScheduler):
         bs_lambda: (Callable[[int], float]): A function which computes a multiplicative factor given an integer
             parameter epoch.
         max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
-            in the memory. If None or greate than the lenght of the dataset wrapped by the dataloader, max_batch_size is
-             set to `len(self.dataloader.dataset)`. Default: None.
+            in the memory. If None or greater than the lenght of the dataset wrapped by the dataloader, max_batch_size
+            is set to `len(self.dataloader.dataset)`. Default: None.
         min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
         verbose (bool): If ``True``, prints a message to stdout for each update. Default: ``False``.
 
     Example:
         >>> dataloader = ...
         >>> func = lambda epoch: 1.05
-        >>> scheduler = LambdaBS(dataloader, bs_lambda=func)
+        >>> scheduler = MultiplicativeBS(dataloader, bs_lambda=func)
         >>> for epoch in range(100):
         >>>     train(...)
         >>>     validate(...)
