@@ -1,11 +1,14 @@
 # Inspired from https://pytorch.org/docs/stable/_modules/torch/optim/lr_scheduler.html.
 import types
-from typing import Callable, Union, List
+from typing import Callable, Union, List, Sequence
 from collections import Counter
 
+import torch
+from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
 
-__all__ = ['LambdaBS', 'MultiplicativeBS', 'StepBS', 'MultiStepBS', 'ConstantBS', 'BSScheduler', 'BatchSizeManager']
+__all__ = ['LambdaBS', 'MultiplicativeBS', 'StepBS', 'MultiStepBS', 'ConstantBS', 'LinearBS', 'BSScheduler',
+           'BatchSizeManager']
 
 
 def check_isinstance(x, instance: type):
@@ -227,6 +230,7 @@ class LambdaBS(BSScheduler):
     def __init__(self, dataloader: DataLoader, bs_lambda: Callable[[int], int],
                  batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
                  min_batch_size: int = 1, verbose: bool = False):
+        assert callable(bs_lambda)
         self.bs_lambda: Callable[[int], int] = bs_lambda
         super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
 
@@ -292,6 +296,7 @@ class MultiplicativeBS(BSScheduler):
     def __init__(self, dataloader: DataLoader, bs_lambda: Callable[[int], int],
                  batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
                  min_batch_size: int = 1, verbose: bool = False):
+        assert callable(bs_lambda)
         self.bs_lambda: Callable[[int], int] = bs_lambda
         super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
 
@@ -359,6 +364,9 @@ class StepBS(BSScheduler):
     def __init__(self, dataloader: DataLoader, step_size: int, gamma: float = 2.0,
                  batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
                  min_batch_size: int = 1, verbose: bool = False):
+        assert isinstance(step_size, int) and step_size > 0
+        assert gamma > 0.0
+        # Gamma is expected to be greater than 1, but we do not forbid batch size decay.
         self.step_size: int = step_size
         self.gamma: float = gamma
         super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
@@ -379,8 +387,7 @@ class MultiStepBS(BSScheduler):
 
     Args:
         dataloader (DataLoader): Wrapped dataloader.
-        milestones (List[int]): List of epoch indices. Must be sorted in non-desceding order.
-        gamma (float): Multiplicative factor of batch size growth. Default: 2.0.
+        milestones (Sequence[int]): Sequence of epoch indices.
         batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
             which provides a getter and setter for the batch size. Default: None.
         max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
@@ -402,10 +409,14 @@ class MultiStepBS(BSScheduler):
         >>>     scheduler.step()
     """
 
-    def __init__(self, dataloader: DataLoader, milestones: List[int], gamma: float = 2.0,
+    def __init__(self, dataloader: DataLoader, milestones: Sequence[int], gamma: float = 2.0,
                  batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
                  min_batch_size: int = 1, verbose: bool = False):
-        assert all(milestones[i] <= milestones[i + 1] for i in range(len(milestones) - 1)), "Milestones must be sorted."
+        assert isinstance(milestones, (tuple, list))
+        assert len(milestones) > 0 and all([x > 0 and isinstance(x, int) for x in milestones])
+        assert gamma > 0.0
+        # Gamma is expected to be greater than 1, but we do not forbid batch size decay.
+        # We do not require milestones to be sorted. However, sorted looks better.
         self.milestones: Counter[int, int] = Counter(milestones)
         self.gamma: float = gamma
         super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
@@ -423,9 +434,9 @@ class MultiStepBS(BSScheduler):
 
 
 class ConstantBS(BSScheduler):
-    """ Increases the batch size by a constant factor until the number of epochs reaches a pre-defined milestone.
-    The batch size is multiplied by the constant factor during initialization and is multiplied again with the inverse
-    of the constant factor when the milestone is reached.
+    """ Increases the batch size by a constant multiplicative factor until the number of epochs reaches a pre-defined
+    milestone. The batch size is multiplied by the constant factor during initialization and is multiplied again with
+    the inverse of the constant factor when the milestone is reached.
     If the constant factor makes the batch size increase the image out of bounds, the constant factor is changed
     automatically such that the batch size remains within bounds.
 
@@ -458,6 +469,9 @@ class ConstantBS(BSScheduler):
     def __init__(self, dataloader: DataLoader, factor: float, milestone: int = 5,
                  batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
                  min_batch_size: int = 1, verbose: bool = False):
+        assert isinstance(milestone, int) and milestone > 0
+        assert factor > 0.0
+        # Factor is expected to be greater than 1.0, as this should be a warmup process.
         self.factor: float = factor
         self.milestone: int = milestone
         super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
@@ -484,3 +498,69 @@ class ConstantBS(BSScheduler):
             return current_batch_size
 
         return int(current_batch_size * (1.0 / self.factor))
+
+
+class LinearBS(BSScheduler):
+    """ Increases the batch size by a linearly changing small multiplicative factor until the number of epochs reaches
+    a pre-defined milestone.
+
+    Args:
+        dataloader (DataLoader): Wrapped dataloader.
+        start_factor (float): The number we multiply the batch size in the first epoch. The multiplication factor
+            changes towards end_factor in the following epochs. Default: 3.0.
+        end_factor (float): The number we multiply the batch size at the end of the linear changing process.
+                Default: 1.0.
+        milestone (int): The number of steps that the scheduler increases the learning rate. Default: 5.
+        batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
+            which provides a getter and setter for the batch size. Default: None.
+        max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
+            in the memory. If None or greater than the lenght of the dataset wrapped by the dataloader, max_batch_size
+            is set to `len(self.dataloader.dataset)`. Default: None.
+        min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
+        verbose (bool): If ``True``, prints a message to stdout for each update. Default: ``False``.
+
+    Example:
+        >>> dataloader = ...
+        >>> # Assuming the base batch size is 10.
+        >>> # bs = 60 if epoch == 0
+        >>> # bs = 50 if epoch == 1
+        >>> # bs = 40 if epoch == 2
+        >>> # bs = 30 if epoch == 3
+        >>> # bs = 20 if epoch == 4
+        >>> # bs = 10 if epoch >= 5
+        >>> scheduler = LinearBS(dataloader, start_factor=6.0, end_factor=1.0, milestone=5)
+        >>> for epoch in range(100):
+        >>>     train(...)
+        >>>     validate(...)
+        >>>     scheduler.step()
+    """
+
+    def __init__(self, dataloader: DataLoader, start_factor: float = 3.0, end_factor: float = 1.0, milestone: int = 5,
+                 batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
+                 min_batch_size: int = 1, verbose: bool = False):
+        assert isinstance(milestone, int) and milestone > 0
+        assert start_factor > 0.0 and end_factor > 0.0
+        # Both start_factor and end_factor are expected to be greater than 1.0, with start_factor > end_factor, as this
+        # should be a warmup process. But we do not forbid any other sound combinations.
+        self.start_factor: float = start_factor
+        self.end_factor: float = end_factor
+        self.milestone: int = milestone
+        super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
+
+    def get_bs(self) -> int:
+        """ Returns the next batch size as an :class:`int`.
+
+        The current batch size is multiplied by the linear changing factor, starting from start_factor to end_factor.
+        After the milestone is reached, the batch size is not changed anymore.
+        """
+        current_batch_size = self.get_current_batch_size()
+
+        if self.last_epoch > self.milestone:
+            return current_batch_size
+
+        if self.last_epoch == 0:
+            return int(current_batch_size * self.start_factor)
+
+        value_range = self.end_factor - self.start_factor
+        return int(current_batch_size * (
+                1.0 + value_range / (self.milestone * self.start_factor + (self.last_epoch - 1) * value_range)))

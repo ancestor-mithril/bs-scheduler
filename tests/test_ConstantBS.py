@@ -12,19 +12,6 @@ class TestConstantBS(BSTest):
         # TODO: Test multiple dataloaders: dataloader with workers, dataloaders with samplers, with drop last and
         #  without drop last and so on.
 
-    @staticmethod
-    def compute_expected_batch_sizes(epochs, base_batch_size, step_size, gamma, min_batch_size, max_batch_size):
-        return None
-        expected_batch_sizes = [base_batch_size]  # Base batch size is added as a boundary condition.
-        for epoch in range(epochs):
-            last_batch_size = expected_batch_sizes[-1]
-            if epoch == 0 or epoch % step_size != 0:
-                expected_batch_sizes.append(last_batch_size)
-            else:
-                expected_batch_sizes.append(clip(int(last_batch_size * gamma), min_batch_size, max_batch_size))
-        expected_batch_sizes.pop(0)  # Removing base batch size.
-        return expected_batch_sizes
-
     def test_dataloader_lengths(self):
         dataloader = create_dataloader(self.dataset, batch_size=self.base_batch_size)
         factor = 5.0

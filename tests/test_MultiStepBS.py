@@ -25,7 +25,7 @@ class TestMultiStepBS(BSTest):
 
     def test_dataloader_lengths(self):
         dataloader = create_dataloader(self.dataset, batch_size=self.base_batch_size)
-        milestones = [10, 50, 70, 70, 80]
+        milestones = [70, 70, 80, 10, 50]
         gamma = 1.1
         scheduler = MultiStepBS(dataloader, milestones=milestones, gamma=gamma)
         n_epochs = 300
