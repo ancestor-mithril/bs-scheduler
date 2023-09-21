@@ -5,7 +5,7 @@ from collections import Counter
 
 from torch.utils.data import DataLoader, Dataset
 
-__all__ = ['LambdaBS', 'MultiplicativeBS', 'StepBS', 'MultiStepBS', 'BSScheduler', 'BatchSizeManager']
+__all__ = ['LambdaBS', 'MultiplicativeBS', 'StepBS', 'MultiStepBS', 'ConstantBS', 'BSScheduler', 'BatchSizeManager']
 
 
 def check_isinstance(x, instance: type):
@@ -167,6 +167,7 @@ class BSScheduler:
             state_dict (dict): scheduler state. Should be an object returned from a call to :meth:`state_dict`.
         """
         self.__dict__.update(state_dict)
+        # TODO: Test training, saving, loading and resuming scheduler. Ensure that the batch size is set correctly.
         self.set_batch_size(self.get_last_bs())  # Setting the batch size to the last computed batch size.
 
     def get_last_bs(self) -> int:
@@ -419,3 +420,65 @@ class MultiStepBS(BSScheduler):
         if self.last_epoch not in self.milestones:
             return self.get_current_batch_size()
         return int(self.get_current_batch_size() * self.gamma ** self.milestones[self.last_epoch])
+
+
+class ConstantBS(BSScheduler):
+    """ Increases the batch size by a constant factor until the number of epochs reaches a pre-defined milestone.
+    The batch size is multiplied by the constant factor during initialization and is multiplied again with the inverse
+    of the constant factor when the milestone is reached.
+    If the constant factor makes the batch size increase the image out of bounds, the constant factor is changed
+    automatically such that the batch size remains within bounds.
+
+    Args:
+        dataloader (DataLoader): Wrapped dataloader.
+        factor (float): The number we multiply the batch size until the milestone.
+        milestone (int): The number of steps that the scheduler increases the learning rate. Default: 5.
+        batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
+            which provides a getter and setter for the batch size. Default: None.
+        max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
+            in the memory. If None or greater than the lenght of the dataset wrapped by the dataloader, max_batch_size
+            is set to `len(self.dataloader.dataset)`. Default: None.
+        min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
+        verbose (bool): If ``True``, prints a message to stdout for each update. Default: ``False``.
+
+    Example:
+        >>> dataloader = ...
+        >>> # Assuming the base batch size is 10.
+        >>> # bs = 50 if epoch == 0
+        >>> # bs = 50 if epoch == 1
+        >>> # bs = 50 if epoch == 2
+        >>> # bs = 10 if epoch >= 3
+        >>> scheduler = ConstantBS(dataloader, factor=5, milestone=3)
+        >>> for epoch in range(100):
+        >>>     train(...)
+        >>>     validate(...)
+        >>>     scheduler.step()
+    """
+
+    def __init__(self, dataloader: DataLoader, factor: float, milestone: int = 5,
+                 batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
+                 min_batch_size: int = 1, verbose: bool = False):
+        self.factor: float = factor
+        self.milestone: int = milestone
+        super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
+
+    def get_bs(self) -> int:
+        """ Returns the next batch size as an :class:`int`.
+
+        TODO: Documentation
+        """
+        current_batch_size = self.get_current_batch_size()
+
+        if self.last_epoch == 0:
+            max_factor = self.max_batch_size / current_batch_size
+            min_factor = self.min_batch_size / current_batch_size
+            if self.factor > max_factor:
+                self.factor = max_factor
+            elif self.factor < min_factor:
+                self.factor = min_factor
+            return int(current_batch_size * self.factor)
+
+        if self.last_epoch != self.milestone:
+            return current_batch_size
+
+        return int(current_batch_size * (1.0 / self.factor))
