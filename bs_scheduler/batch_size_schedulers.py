@@ -465,7 +465,9 @@ class ConstantBS(BSScheduler):
     def get_bs(self) -> int:
         """ Returns the next batch size as an :class:`int`.
 
-        TODO: Documentation
+        The value of the batch size is changed once at initialization, when the batch size is multiplied with the given
+        factor, and twice when the milestone is reached and the batch size is multiplied with the inverse of the given
+        factor. The factor is adjusted during initialization such that it does not return a batch size out of bounds.
         """
         current_batch_size = self.get_current_batch_size()
 
