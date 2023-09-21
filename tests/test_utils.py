@@ -65,13 +65,6 @@ def clip(x, min_x, max_x):
 
 
 class BSTest(unittest.TestCase):
-    def assert_real_eq_inferred(self, real, inferred):
-        self.assertEqual(real, inferred, "Dataloader __len__ does not return the real length. The real length should "
-                                         "always be equal to the inferred length except for Iterable Datasets for "
-                                         "which the __len__ could be inaccurate.")
-
-    def assert_real_eq_expected(self, real, expected):
-        self.assertEqual(real, expected, f"Expected {expected}, got {real}")
 
     @staticmethod
     def compute_epoch_lengths(batch_sizes, dataset_len, drop_last):

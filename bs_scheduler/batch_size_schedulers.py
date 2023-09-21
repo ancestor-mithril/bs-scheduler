@@ -4,7 +4,7 @@ from typing import Callable, Union
 
 from torch.utils.data import DataLoader, Dataset
 
-__all__ = ['LambdaBS', 'MultiplicativeBS', 'BSScheduler', 'BatchSizeManager']
+__all__ = ['LambdaBS', 'MultiplicativeBS', 'StepBS', 'BSScheduler', 'BatchSizeManager']
 
 
 def check_isinstance(x, instance: type):
@@ -16,6 +16,7 @@ class BatchSizeManager:
     """ Base class for all batch size managers, used for getting and setting the batch size. It is not mandatory to
     inherit from this, but users must implement :meth:`get_current_batch_size` and :meth:`set_batch_size`.
     """
+
     def get_current_batch_size(self) -> int:
         """ Returns the current batch size used by the dataloader as an :class:`int`.
         """
@@ -36,6 +37,7 @@ class DefaultBatchSizeManager(BatchSizeManager):
     given to the dataloader. See
     https://github.com/pytorch/pytorch/blob/772e104dfdfd70c74cbc9600cfc946dc7c378f68/torch/utils/data/sampler.py#L241.
     """
+
     def __init__(self, dataloader: DataLoader):
         check_isinstance(dataloader, DataLoader)
         if dataloader.batch_sampler is None:
@@ -68,6 +70,7 @@ class CustomBatchSizeManager(BatchSizeManager):
     is controlled by the dataset wrapped by the dataloader, so this class expects the dataset to provide a getter and
     a setter for the batch size, named :meth:`get_batch_size` and :meth:`change_batch_size` respectively.
     """
+
     def __init__(self, dataset: Dataset):
         check_isinstance(dataset, Dataset)
         if not hasattr(dataset, "change_batch_size"):
@@ -219,10 +222,10 @@ class LambdaBS(BSScheduler):
         >>>     scheduler.step()
     """
 
-    def __init__(self, dataloader: DataLoader, bs_lambda: Callable[[int], int], max_batch_size: Union[int, None] = None,
-                 batch_size_manager: Union[BatchSizeManager, None] = None, min_batch_size: int = 1,
-                 verbose: bool = False):
-        self.bs_lambda = bs_lambda
+    def __init__(self, dataloader: DataLoader, bs_lambda: Callable[[int], int],
+                 batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
+                 min_batch_size: int = 1, verbose: bool = False):
+        self.bs_lambda: Callable[[int], int] = bs_lambda
         super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
 
     def state_dict(self) -> dict:
@@ -284,10 +287,10 @@ class MultiplicativeBS(BSScheduler):
         >>>     scheduler.step()
     """
 
-    def __init__(self, dataloader: DataLoader, bs_lambda: Callable[[int], int], max_batch_size: Union[int, None] = None,
-                 batch_size_manager: Union[BatchSizeManager, None] = None, min_batch_size: int = 1,
-                 verbose: bool = False):
-        self.bs_lambda = bs_lambda
+    def __init__(self, dataloader: DataLoader, bs_lambda: Callable[[int], int],
+                 batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
+                 min_batch_size: int = 1, verbose: bool = False):
+        self.bs_lambda: Callable[[int], int] = bs_lambda
         super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
 
     def state_dict(self) -> dict:
@@ -320,3 +323,50 @@ class MultiplicativeBS(BSScheduler):
         It is calculated as the current value of the batch size times the factor returned by `bs_lambda`.
         """
         return int(self.get_current_batch_size() * self.bs_lambda(self.last_epoch))
+
+
+class StepBS(BSScheduler):
+    """ Multiplies the batch size by gamma every step_size epochs.
+
+    Args:
+        dataloader (DataLoader): Wrapped dataloader.
+        step_size (int): Period of batch size growth.
+        gamma (float): Multiplicative factor of batch size growth. Default: 2.0.
+        batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
+            which provides a getter and setter for the batch size. Default: None.
+        max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
+            in the memory. If None or greater than the lenght of the dataset wrapped by the dataloader, max_batch_size
+            is set to `len(self.dataloader.dataset)`. Default: None.
+        min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
+        verbose (bool): If ``True``, prints a message to stdout for each update. Default: ``False``.
+
+    Example:
+        >>> dataloader = ...
+        >>> # Assuming the base batch size is 10.
+        >>> # bs = 10 if epoch < 30
+        >>> # bs = 20 if 30 <= epoch < 60
+        >>> # bs = 40 if 60 <= epoch < 90
+        >>> # ...
+        >>> scheduler = StepBS(dataloader, step_size=30, gamma=2.0)
+        >>> for epoch in range(100):
+        >>>     train(...)
+        >>>     validate(...)
+        >>>     scheduler.step()
+    """
+
+    def __init__(self, dataloader: DataLoader, step_size: int, gamma: float = 2.0,
+                 batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
+                 min_batch_size: int = 1, verbose: bool = False):
+        self.step_size: int = step_size
+        self.gamma: float = gamma
+        super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
+
+    def get_bs(self) -> int:
+        """ Returns the next batch size as an :class:`int`.
+
+        It returns the current batch size times gamma each step_size epochs, otherwise it returns the current batch
+        size.
+        """
+        if self.last_epoch == 0 or self.last_epoch % self.step_size != 0:
+            return self.get_current_batch_size()
+        return int(self.get_current_batch_size() * self.gamma)
