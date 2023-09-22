@@ -2,7 +2,7 @@ import unittest
 
 from bs_scheduler import ConstantBS
 from tests.test_utils import create_dataloader, simulate_n_epochs, fashion_mnist, \
-    get_batch_sizes_across_epochs, BSTest, clip, rint
+    get_batch_sizes_across_epochs, BSTest, rint
 
 
 class TestConstantBS(BSTest):

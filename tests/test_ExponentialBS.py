@@ -1,11 +1,8 @@
 import unittest
 
-import numpy as np
-import torch
-
 from bs_scheduler import ExponentialBS
 from tests.test_utils import create_dataloader, simulate_n_epochs, fashion_mnist, \
-    get_batch_sizes_across_epochs, BSTest, clip, rint
+    get_batch_sizes_across_epochs, BSTest
 
 
 class TestExponentialBS(BSTest):
