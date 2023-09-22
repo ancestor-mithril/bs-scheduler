@@ -2,7 +2,7 @@ import unittest
 
 from bs_scheduler import LambdaBS
 from tests.test_utils import create_dataloader, iterate, simulate_n_epochs, fashion_mnist, \
-    get_batch_sizes_across_epochs, BSTest, clip
+    get_batch_sizes_across_epochs, BSTest, clip, rint
 
 
 class TestLambdaBS(BSTest):
@@ -14,16 +14,20 @@ class TestLambdaBS(BSTest):
 
     @staticmethod
     def compute_expected_batch_sizes(epochs, base_batch_size, fn, min_batch_size, max_batch_size):
-        return [clip(int(base_batch_size * fn(epoch)), min_batch_size, max_batch_size) for epoch in range(epochs)]
+        return [clip(rint(base_batch_size * fn(epoch)), min_batch_size, max_batch_size) for epoch in range(epochs)]
 
     def test_sanity(self):
         dataloader = create_dataloader(self.dataset, batch_size=self.base_batch_size)
         real, inferred = iterate(dataloader)
-        self.assert_real_eq_inferred(real, inferred)
+        self.assertEqual(real, inferred, "Dataloader __len__ does not return the real length. The real length should "
+                                         "always be equal to the inferred length except for Iterable Datasets for "
+                                         "which the __len__ could be inaccurate.")
 
         dataloader.batch_sampler.batch_size = 526
         real, inferred = iterate(dataloader)
-        self.assert_real_eq_inferred(real, inferred)
+        self.assertEqual(real, inferred, "Dataloader __len__ does not return the real length. The real length should "
+                                         "always be equal to the inferred length except for Iterable Datasets for "
+                                         "which the __len__ could be inaccurate.")
 
     def test_dataloader_lengths(self):
         dataloader = create_dataloader(self.dataset, batch_size=self.base_batch_size)
@@ -37,7 +41,7 @@ class TestLambdaBS(BSTest):
                                                                  scheduler.min_batch_size, scheduler.max_batch_size)
         expected_lengths = self.compute_epoch_lengths(expected_batch_sizes, len(self.dataset), drop_last=False)
 
-        self.assert_real_eq_expected(epoch_lengths, expected_lengths)
+        self.assertEqual(epoch_lengths, expected_lengths)
 
     def test_dataloader_batch_size(self):
         dataloader = create_dataloader(self.dataset, batch_size=self.base_batch_size)
@@ -48,7 +52,7 @@ class TestLambdaBS(BSTest):
         batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
         expected_batch_sizes = self.compute_expected_batch_sizes(n_epochs, self.base_batch_size, fn,
                                                                  scheduler.min_batch_size, scheduler.max_batch_size)
-        self.assert_real_eq_expected(batch_sizes, expected_batch_sizes)
+        self.assertEqual(batch_sizes, expected_batch_sizes)
 
 
 if __name__ == "__main__":
