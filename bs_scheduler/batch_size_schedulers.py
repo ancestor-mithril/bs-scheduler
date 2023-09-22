@@ -1,5 +1,6 @@
 # Inspired from https://pytorch.org/docs/stable/_modules/torch/optim/lr_scheduler.html.
 import types
+from bisect import bisect_right
 from typing import Callable, Union, List, Sequence
 from collections import Counter
 
@@ -8,7 +9,7 @@ from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
 
 __all__ = ['LambdaBS', 'MultiplicativeBS', 'StepBS', 'MultiStepBS', 'ConstantBS', 'LinearBS', 'ExponentialBS',
-           'BSScheduler', 'BatchSizeManager']
+           'SequentialBS', 'BSScheduler', 'BatchSizeManager']
 
 
 def rint(x: float) -> int:
@@ -160,8 +161,9 @@ class BSScheduler:
 
         # See https://pytorch.org/docs/stable/_modules/torch/optim/lr_scheduler.html for "with_counter".
         self.last_epoch: int = -1
-        self.base_bs: int = self.get_current_batch_size()
-        self._last_bs: int = self.base_bs
+        if not hasattr(self.dataloader, '_base_batch_size'):
+            self.dataloader._base_batch_size = self.get_current_batch_size()
+        self._last_bs: int = self.dataloader._base_batch_size
         self.step()
 
     def state_dict(self) -> dict:
@@ -271,7 +273,7 @@ class LambdaBS(BSScheduler):
 
         It is calculated as the initial value of the batch size times the factor returned by `bs_lambda`.
         """
-        return rint(self.base_bs * self.bs_lambda(self.last_epoch))
+        return rint(self.dataloader._base_batch_size * self.bs_lambda(self.last_epoch))
 
 
 class MultiplicativeBS(BSScheduler):
@@ -620,3 +622,100 @@ class ExponentialBS(BSScheduler):
             return current_batch_size
 
         return rint(current_batch_size * self.gamma)
+
+
+class SequentialBS(BSScheduler):
+    """ Similar to torch.optim.lr_scheduler.SequentialLR. Receives a sequence of schedulers and calls them sequentially
+    given the milestone points that reflect which scheduler is supposed to be called at a fiven epoch
+
+    Args:
+        dataloader (DataLoader): Wrapped dataloader.
+        schedulers (Sequence[BSScheduler]): Sequence of batch size schedulers. We expect the first scheduler to have
+            been initialized first.
+        milestones (Sequence[int]): Sequence of integers that reflects the milestone points. Must be sorted in a
+            non-descending order.
+        batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
+            which provides a getter and setter for the batch size. Default: None.
+        max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
+            in the memory. If None or greater than the lenght of the dataset wrapped by the dataloader, max_batch_size
+            is set to `len(self.dataloader.dataset)`. Default: None.
+        min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
+        verbose (bool): Does nothing.
+
+    Example:
+        >>> dataloader = ...
+        >>> # Assuming the base batch size is 10.
+        >>> # bs = 100 if epoch == 0
+        >>> # bs = 100 if epoch == 1
+        >>> # bs = 100 if epoch == 2
+        >>> # bs = 100 if epoch == 3
+        >>> # bs = 10 if epoch == 4
+        >>> # bs = 11 if epoch == 5
+        >>> # ...
+        >>> scheduler1 = ConstantBS(dataloader, factor=10, milestone=4)
+        >>> scheduler2 = ExponentialBS(dataloader, gamma=1.1)
+        >>> scheduler = SequentialBS(dataloader, schedulers=[scheduler1, scheduler2], milestones=[5])
+        >>> for epoch in range(100):
+        >>>     train(...)
+        >>>     validate(...)
+        >>>     scheduler.step()
+    """
+
+    def __init__(self, dataloader: DataLoader, schedulers: Sequence[BSScheduler], milestones=Sequence[int],
+                 batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
+                 min_batch_size: int = 1, verbose: bool = False):
+        # Doing the initialization first, all checks later. In the initial step called in constructor we do nothing.
+        super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
+
+        assert isinstance(schedulers, (tuple, list)) and len(schedulers) >= 2 and all(
+            [isinstance(x, BSScheduler) for x in schedulers])
+        assert isinstance(milestones, (tuple, list)) and len(milestones) >= 1 and all(
+            [isinstance(x, int) for x in milestones]) and milestones[0] > 0
+        assert all([milestones[i] >= milestones[i - 1] for i in range(1, len(milestones))]), \
+            f"Milestones must be sorted, are {milestones}"
+
+        if len(milestones) != len(schedulers) - 1:
+            raise ValueError(f"SequentialBS expects the number of schedulers provided to be one more than the number "
+                             f"of milestone points, but got {len(schedulers)} and the number of milestones is "
+                             f"{len(milestones)}")
+        for i in range(len(schedulers)):
+            if schedulers[i].dataloader != self.dataloader:
+                raise ValueError(f"SequentialBS expects all schedulers to belong to the same dataloader, but got "
+                                 f"scheduler at index {i} to be different than the dataloader passed in.")
+            if not isinstance(schedulers[i].batch_size_manager, type(self.batch_size_manager)):
+                raise ValueError(f"SequentialBS expects all schedulers to have the same batch size manager, but got "
+                                 f"scheduler at index {i} to have a different batch size manager. Expected type of "
+                                 f"batch size manager: {type(self.batch_size_manager).__name__}, got: "
+                                 f"{type(schedulers[i].batch_size_manager).__name__}.")
+            if schedulers[i].max_batch_size != self.max_batch_size:
+                raise ValueError(f"SequentialBS expects all schedulers to have the same maximum batch size, but got "
+                                 f"scheduler at index {i} to have a different maximum batch size. Expected "
+                                 f"{self.max_batch_size}, got {schedulers[i].max_batch_size}.")
+            if schedulers[i].min_batch_size != self.min_batch_size:
+                raise ValueError(f"SequentialBS expects all schedulers to have the same minimum batch size, but got "
+                                 f"scheduler at index {i} to have a different minimum batch size. Expected "
+                                 f"{self.min_batch_size}, got {schedulers[i].min_batch_size}.")
+            # Undoing the steps done by the schedulers.
+            schedulers[i]._last_bs = self.dataloader._base_batch_size
+            schedulers[i].last_epoch -= 1
+
+        self.set_batch_size(self.dataloader._base_batch_size)  # Set the batch size back to initial value.
+
+        self.schedulers = schedulers
+        self.milestones = milestones
+        # Do the initial step again, but only for the first scheduler.
+        self.schedulers[0].step()
+
+    def step(self):
+        """ Performs the step method for each scheduler until a milestone point is reached and a new scheduler is to be
+        used. The new scheduler is used as if it is called for the first time.
+        """
+        self.last_epoch += 1
+        if self.last_epoch == 0:
+            return
+        i = bisect_right(self.milestones, self.last_epoch)
+        scheduler = self.schedulers[i]
+        if i > 0 and self.milestones[i - 1] == self.last_epoch:
+            scheduler.last_epoch = 0
+        scheduler.step()
+        self._last_bs = scheduler.get_last_bs()
