@@ -7,8 +7,8 @@ import torch
 from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
 
-__all__ = ['LambdaBS', 'MultiplicativeBS', 'StepBS', 'MultiStepBS', 'ConstantBS', 'LinearBS', 'BSScheduler',
-           'BatchSizeManager']
+__all__ = ['LambdaBS', 'MultiplicativeBS', 'StepBS', 'MultiStepBS', 'ConstantBS', 'LinearBS', 'ExponentialBS',
+           'BSScheduler', 'BatchSizeManager']
 
 
 def rint(x: float) -> int:
@@ -572,3 +572,51 @@ class LinearBS(BSScheduler):
         value_range = self.end_factor - self.start_factor
         return rint(current_batch_size * (
                 1.0 + value_range / (self.milestone * self.start_factor + (self.last_epoch - 1) * value_range)))
+
+
+class ExponentialBS(BSScheduler):
+    """ Increases the batch size by a gamma every epoch.
+
+    Args:
+        dataloader (DataLoader): Wrapped dataloader.
+        gamma (float): Multiplicative factor of batch size growth.
+        batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
+            which provides a getter and setter for the batch size. Default: None.
+        max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
+            in the memory. If None or greater than the lenght of the dataset wrapped by the dataloader, max_batch_size
+            is set to `len(self.dataloader.dataset)`. Default: None.
+        min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
+        verbose (bool): If ``True``, prints a message to stdout for each update. Default: ``False``.
+
+    Example:
+        >>> dataloader = ...
+        >>> # Assuming the base batch size is 10.
+        >>> # bs = 10 if epoch == 0
+        >>> # bs = 11 if epoch == 1
+        >>> # bs = 12 if epoch == 2
+        >>> # bs = 13 if epoch == 3
+        >>> # ...
+        >>> scheduler = ExponentialBS(dataloader, gamma=1.1)
+        >>> for epoch in range(100):
+        >>>     train(...)
+        >>>     validate(...)
+        >>>     scheduler.step()
+    """
+
+    def __init__(self, dataloader: DataLoader, gamma: float, batch_size_manager: Union[BatchSizeManager, None] = None,
+                 max_batch_size: Union[int, None] = None, min_batch_size: int = 1, verbose: bool = False):
+        assert gamma > 0.0
+        # Gamma is expected to be greater than 1.0 for batch size growth. It can be lower than 1.0 for batch size decay.
+        self.gamma: float = gamma
+        super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
+
+    def get_bs(self) -> int:
+        """ Returns the next batch size as an :class:`int`.
+        The current batch size is multiplied by gamma each epoch except the first one.
+        """
+        current_batch_size = self.get_current_batch_size()
+
+        if self.last_epoch == 0:
+            return current_batch_size
+
+        return rint(current_batch_size * self.gamma)
