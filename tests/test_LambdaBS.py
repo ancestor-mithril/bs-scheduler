@@ -2,7 +2,7 @@ import unittest
 
 from bs_scheduler import LambdaBS
 from tests.test_utils import create_dataloader, iterate, simulate_n_epochs, fashion_mnist, \
-    get_batch_sizes_across_epochs, BSTest, clip
+    get_batch_sizes_across_epochs, BSTest, clip, rint
 
 
 class TestLambdaBS(BSTest):
@@ -14,7 +14,7 @@ class TestLambdaBS(BSTest):
 
     @staticmethod
     def compute_expected_batch_sizes(epochs, base_batch_size, fn, min_batch_size, max_batch_size):
-        return [clip(int(base_batch_size * fn(epoch)), min_batch_size, max_batch_size) for epoch in range(epochs)]
+        return [clip(rint(base_batch_size * fn(epoch)), min_batch_size, max_batch_size) for epoch in range(epochs)]
 
     def test_sanity(self):
         dataloader = create_dataloader(self.dataset, batch_size=self.base_batch_size)

@@ -2,7 +2,7 @@ import unittest
 
 from bs_scheduler import StepBS
 from tests.test_utils import create_dataloader, simulate_n_epochs, fashion_mnist, \
-    get_batch_sizes_across_epochs, BSTest, clip
+    get_batch_sizes_across_epochs, BSTest, clip, rint
 
 
 class TestStepBS(BSTest):
@@ -20,7 +20,7 @@ class TestStepBS(BSTest):
             if epoch == 0 or epoch % step_size != 0:
                 expected_batch_sizes.append(last_batch_size)
             else:
-                expected_batch_sizes.append(clip(int(last_batch_size * gamma), min_batch_size, max_batch_size))
+                expected_batch_sizes.append(clip(rint(last_batch_size * gamma), min_batch_size, max_batch_size))
         expected_batch_sizes.pop(0)  # Removing base batch size.
         return expected_batch_sizes
 

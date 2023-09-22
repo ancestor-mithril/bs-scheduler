@@ -60,6 +60,12 @@ def get_batch_sizes_across_epochs(dataloader, scheduler, epochs):
     return batch_sizes
 
 
+def rint(x: float) -> int:
+    """ Rounds to the nearest int and returns the value as int.
+    """
+    return int(round(x))
+
+
 def clip(x, min_x, max_x):
     return min(max(x, min_x), max_x)
 

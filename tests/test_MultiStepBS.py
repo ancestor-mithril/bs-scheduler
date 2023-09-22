@@ -2,7 +2,7 @@ import unittest
 
 from bs_scheduler import MultiStepBS
 from tests.test_utils import create_dataloader, simulate_n_epochs, fashion_mnist, \
-    get_batch_sizes_across_epochs, BSTest, clip
+    get_batch_sizes_across_epochs, BSTest, clip, rint
 
 
 class TestMultiStepBS(BSTest):
@@ -19,7 +19,7 @@ class TestMultiStepBS(BSTest):
             last_batch_size = expected_batch_sizes[-1]
             for _ in range(milestones.count(epoch)):
                 last_batch_size *= gamma
-            expected_batch_sizes.append(clip(int(last_batch_size), min_batch_size, max_batch_size))
+            expected_batch_sizes.append(clip(rint(last_batch_size), min_batch_size, max_batch_size))
         expected_batch_sizes.pop(0)  # Removing base batch size
         return expected_batch_sizes
 

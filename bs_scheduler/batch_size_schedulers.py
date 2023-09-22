@@ -11,6 +11,12 @@ __all__ = ['LambdaBS', 'MultiplicativeBS', 'StepBS', 'MultiStepBS', 'ConstantBS'
            'BatchSizeManager']
 
 
+def rint(x: float) -> int:
+    """ Rounds to the nearest int and returns the value as int.
+    """
+    return int(round(x))
+
+
 def check_isinstance(x, instance: type):
     if not isinstance(x, instance):
         raise TypeError(f"{type(x).__name__} is not a {x.__name__}.")
@@ -123,6 +129,8 @@ class BSScheduler:
         self.dataloader: DataLoader = dataloader
         self.verbose: bool = verbose
 
+        assert max_batch_size is None or isinstance(max_batch_size, int)
+        assert isinstance(min_batch_size, int)
         if max_batch_size is None:
             self.max_batch_size: int = len(self.dataloader.dataset)
         else:
@@ -263,7 +271,7 @@ class LambdaBS(BSScheduler):
 
         It is calculated as the initial value of the batch size times the factor returned by `bs_lambda`.
         """
-        return int(self.base_bs * self.bs_lambda(self.last_epoch))
+        return rint(self.base_bs * self.bs_lambda(self.last_epoch))
 
 
 class MultiplicativeBS(BSScheduler):
@@ -329,7 +337,7 @@ class MultiplicativeBS(BSScheduler):
 
         It is calculated as the current value of the batch size times the factor returned by `bs_lambda`.
         """
-        return int(self.get_current_batch_size() * self.bs_lambda(self.last_epoch))
+        return rint(self.get_current_batch_size() * self.bs_lambda(self.last_epoch))
 
 
 class StepBS(BSScheduler):
@@ -379,7 +387,7 @@ class StepBS(BSScheduler):
         """
         if self.last_epoch == 0 or self.last_epoch % self.step_size != 0:
             return self.get_current_batch_size()
-        return int(self.get_current_batch_size() * self.gamma)
+        return rint(self.get_current_batch_size() * self.gamma)
 
 
 class MultiStepBS(BSScheduler):
@@ -430,7 +438,7 @@ class MultiStepBS(BSScheduler):
         """
         if self.last_epoch not in self.milestones:
             return self.get_current_batch_size()
-        return int(self.get_current_batch_size() * self.gamma ** self.milestones[self.last_epoch])
+        return rint(self.get_current_batch_size() * self.gamma ** self.milestones[self.last_epoch])
 
 
 class ConstantBS(BSScheduler):
@@ -492,12 +500,12 @@ class ConstantBS(BSScheduler):
                 self.factor = max_factor
             elif self.factor < min_factor:
                 self.factor = min_factor
-            return int(current_batch_size * self.factor)
+            return rint(current_batch_size * self.factor)
 
         if self.last_epoch != self.milestone:
             return current_batch_size
 
-        return int(current_batch_size * (1.0 / self.factor))
+        return rint(current_batch_size * (1.0 / self.factor))
 
 
 class LinearBS(BSScheduler):
@@ -559,8 +567,8 @@ class LinearBS(BSScheduler):
             return current_batch_size
 
         if self.last_epoch == 0:
-            return int(current_batch_size * self.start_factor)
+            return rint(current_batch_size * self.start_factor)
 
         value_range = self.end_factor - self.start_factor
-        return int(current_batch_size * (
+        return rint(current_batch_size * (
                 1.0 + value_range / (self.milestone * self.start_factor + (self.last_epoch - 1) * value_range)))

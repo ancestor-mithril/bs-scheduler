@@ -2,7 +2,7 @@ import unittest
 
 from bs_scheduler import MultiplicativeBS
 from tests.test_utils import create_dataloader, simulate_n_epochs, fashion_mnist, \
-    get_batch_sizes_across_epochs, BSTest, clip
+    get_batch_sizes_across_epochs, BSTest, clip, rint
 
 
 class TestMultiplicativeBS(BSTest):
@@ -16,7 +16,7 @@ class TestMultiplicativeBS(BSTest):
     def compute_expected_batch_sizes(epochs, base_batch_size, fn, min_batch_size, max_batch_size):
         expected_batch_sizes = [base_batch_size]  # Base batch size is added as a boundary condition.
         for epoch in range(epochs):
-            batch_size = int(expected_batch_sizes[-1] * fn(epoch))
+            batch_size = rint(expected_batch_sizes[-1] * fn(epoch))
             batch_size = clip(batch_size, min_batch_size, max_batch_size)
             expected_batch_sizes.append(batch_size)
         expected_batch_sizes.pop(0)  # Removing base batch size.
