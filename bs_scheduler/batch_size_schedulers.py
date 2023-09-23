@@ -1,21 +1,30 @@
 # Inspired from https://pytorch.org/docs/stable/_modules/torch/optim/lr_scheduler.html.
+import math
 import types
 from bisect import bisect_right
-from typing import Callable, Union, List, Sequence
 from collections import Counter
+from typing import Callable, Union, Sequence
 
-import torch
-from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
 
 __all__ = ['LambdaBS', 'MultiplicativeBS', 'StepBS', 'MultiStepBS', 'ConstantBS', 'LinearBS', 'ExponentialBS',
-           'SequentialBS', 'PolynomialBS', 'BSScheduler', 'BatchSizeManager']
+           'SequentialBS', 'PolynomialBS', 'CosineAnnealingBS', 'BSScheduler', 'BatchSizeManager']
 
 
 def rint(x: float) -> int:
     """ Rounds to the nearest int and returns the value as int.
     """
     return int(round(x))
+
+
+def clip(x: int, min: int, max: int) -> int:
+    """ Clips x to [min, max] interval.
+    """
+    if x < min:
+        return min
+    if x > max:
+        return max
+    return x
 
 
 def check_isinstance(x, instance: type):
@@ -226,7 +235,7 @@ class BSScheduler:
         new_bs = self.get_bs()
         if not self.min_batch_size <= new_bs <= self.max_batch_size:
             self._finished = True
-            new_bs = max(min(new_bs, self.max_batch_size), self.min_batch_size)
+            new_bs = clip(new_bs, min=self.min_batch_size, max=self.max_batch_size)
         self.set_batch_size(new_bs)
         self.print_bs(new_bs)
         self._last_bs = new_bs
@@ -819,8 +828,8 @@ class PolynomialBS(BSScheduler):
                  min_batch_size: int = 1, verbose: bool = False):
         assert isinstance(total_iters, int) and total_iters > 1
 
-        self.total_iters = total_iters
-        self.power = power
+        self.total_iters: int = total_iters
+        self.power: float = power
         super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
 
     def get_bs(self) -> int:
@@ -836,3 +845,76 @@ class PolynomialBS(BSScheduler):
         factor = ((1.0 - (self.last_epoch - 1) / self.total_iters) / (
                 1.0 - self.last_epoch / self.total_iters)) ** self.power
         return rint(current_batch_size * factor)
+
+
+class CosineAnnealingBS(BSScheduler):
+    """ Similar to torch.optim.lr_scheduler.CosineAnnealingLR which implements the cosine annealing part of
+    `SGDR: Stochastic Gradient Descent with Warm Restarts`_. For batch size, we perform reverse annealing and instead
+    of decreasing the batch size to min_batch_size we increase it to max_batch_size.
+
+    Args:
+        dataloader (DataLoader): Wrapped dataloader.
+        total_iters (int): The number of steps that the scheduler increases the batch size.
+        batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
+            which provides a getter and setter for the batch size. Default: None.
+        max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
+            in the memory. If None or greater than the lenght of the dataset wrapped by the dataloader, max_batch_size
+            is set to `len(self.dataloader.dataset)`. Default: None.
+        min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
+        verbose (bool): If ``True``, prints a message to stdout for each update. Default: ``False``.
+
+    .. _SGDR\: Stochastic Gradient Descent with Warm Restarts: https://arxiv.org/abs/1608.03983
+
+    Example:
+        >>> dataloader = ...
+        >>> # Assuming the base batch size is 10.
+        >>> # bs = 10 if epoch % 10 == 0
+        >>> # bs = 19 if epoch % 10 == 1
+        >>> # bs = 41 if epoch % 10 == 2
+        >>> # bs = 69 if epoch % 10 == 3
+        >>> # bs = 91 if epoch % 10 == 4
+        >>> # bs = 100 if epoch % 10 == 5
+        >>> # bs = 91 if epoch % 10 == 6
+        >>> # bs = 67 if epoch % 10 == 7
+        >>> # bs = 37 if epoch % 10 == 8
+        >>> # bs = 13 if epoch % 10 == 9
+        >>> scheduler = CosineAnnealingBS(dataloader, total_iters=5, power=1.0)
+        >>> for epoch in range(100):
+        >>>     train(...)
+        >>>     validate(...)
+        >>>     scheduler.step()
+    """
+
+    def __init__(self, dataloader: DataLoader, total_iters: int, power: float = 1.0,
+                 batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
+                 min_batch_size: int = 1, verbose: bool = False):
+        assert isinstance(total_iters, int) and total_iters > 1
+
+        self.total_iters: int = total_iters
+        super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
+
+    def get_bs(self) -> int:
+        """ Returns the next batch size as an :class:`int`.
+
+        Increases the batch size from base batch size to maximum batch size following a cyclic cosine curve. The
+        implementation is equivalent to torch.optim.lr_scheduler.CosineAnnealingLR.get_lr() and instead of `eta_min` we
+        use `self.max_batch_size` and we clip the values to be within bounds.
+        """
+        current_batch_size = self.get_current_batch_size()
+        base_batch_size = self.dataloader._base_batch_size
+
+        if self.last_epoch == 0:
+            return current_batch_size
+
+        if self.last_epoch == 1 and base_batch_size == current_batch_size:
+            new_bs = self.max_batch_size + (base_batch_size - self.max_batch_size) * (
+                    1 + math.cos(self.last_epoch * math.pi / self.total_iters)) / 2
+        elif (self.last_epoch - 1 - self.total_iters) % (2 * self.total_iters) == 0:
+            new_bs = current_batch_size + (base_batch_size - self.max_batch_size) * (
+                    1 - math.cos(math.pi / self.total_iters)) / 2
+        else:
+            new_bs = (1 + math.cos(math.pi * self.last_epoch / self.total_iters)) / (
+                    1 + math.cos(math.pi * (self.last_epoch - 1) / self.total_iters)) * (
+                             current_batch_size - self.max_batch_size) + self.max_batch_size
+
+        return clip(rint(new_bs), min=base_batch_size, max=self.max_batch_size)
