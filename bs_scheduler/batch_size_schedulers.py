@@ -752,3 +752,30 @@ class SequentialBS(BSScheduler):
         if not scheduler.finished():
             scheduler.step()
             self._last_bs = scheduler.get_last_bs()
+
+    def state_dict(self) -> dict:
+        """ Returns the state of the scheduler as a :class:`dict`.
+
+        It contains an entry for every variable in self.__dict__ which is not the dataloader. The wrapped scheduler
+        stares will also be saved.
+        """
+        state_dict = {key: value for key, value in self.__dict__.items() if key not in ('dataloader', 'schedulers')}
+        state_dict['schedulers'] = [None] * len(self.schedulers)
+
+        for i, s in enumerate(self.schedulers):
+            state_dict['schedulers'][i] = s.state_dict()
+
+        return state_dict
+
+    def load_state_dict(self, state_dict: dict):
+        """ Loads the schedulers state.
+
+        Args:
+            state_dict (dict): scheduler state. Should be an object returned from a call to :meth:`state_dict`.
+        """
+        schedulers = state_dict.pop('schedulers')
+        self.__dict__.update(state_dict)
+
+        state_dict['schedulers'] = schedulers
+        for i, s in enumerate(schedulers):
+            self.schedulers[i].load_state_dict(s)
