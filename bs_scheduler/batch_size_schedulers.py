@@ -9,7 +9,7 @@ from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
 
 __all__ = ['LambdaBS', 'MultiplicativeBS', 'StepBS', 'MultiStepBS', 'ConstantBS', 'LinearBS', 'ExponentialBS',
-           'SequentialBS', 'BSScheduler', 'BatchSizeManager']
+           'SequentialBS', 'PolynomialBS', 'BSScheduler', 'BatchSizeManager']
 
 
 def rint(x: float) -> int:
@@ -150,7 +150,7 @@ class BSScheduler:
             self.batch_size_manager: BatchSizeManager = CustomBatchSizeManager(self.dataloader.dataset)
 
         # Taking over the batch size manager methods for easier batch size getting.
-        self.get_current_batch_size = self.batch_size_manager.get_current_batch_size
+        self.get_current_batch_size: Callable[[], int] = self.batch_size_manager.get_current_batch_size
 
         # See https://pytorch.org/docs/stable/_modules/torch/optim/lr_scheduler.html for "with_counter".
         self.last_epoch: int = -1
@@ -779,3 +779,60 @@ class SequentialBS(BSScheduler):
         state_dict['schedulers'] = schedulers
         for i, s in enumerate(schedulers):
             self.schedulers[i].load_state_dict(s)
+
+
+class PolynomialBS(BSScheduler):
+    """ Increases the batch size using a polynomial function in the given total_iters. Unlike
+    torch.optim.lr_scheduler.PolynomialLR whose polynomial factor decays from 1.0 to 0.0, in this case the polynomial
+    factor increases from 1.0 to 2.0 ** power.
+
+    Args:
+        dataloader (DataLoader): Wrapped dataloader.
+        total_iters (int): The number of steps that the scheduler increases the batch size.
+        power (float): The power of the polynomial. Default: 1.0.
+        batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
+            which provides a getter and setter for the batch size. Default: None.
+        max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
+            in the memory. If None or greater than the lenght of the dataset wrapped by the dataloader, max_batch_size
+            is set to `len(self.dataloader.dataset)`. Default: None.
+        min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
+        verbose (bool): If ``True``, prints a message to stdout for each update. Default: ``False``.
+
+    Example:
+        >>> dataloader = ...
+        >>> # Assuming the base batch size is 10.
+        >>> # bs = 10 if epoch == 0
+        >>> # bs = 10 * 1.25 if epoch == 1
+        >>> # bs = 12 * 1.33 if epoch == 2
+        >>> # bs = 16 * 1.50 if epoch == 3
+        >>> # bs = 24 * 2.00 if epoch == 4
+        >>> # bs = 48 if epoch >= 5
+        >>> scheduler = PolynomialBS(dataloader, total_iters=5, power=1.0)
+        >>> for epoch in range(100):
+        >>>     train(...)
+        >>>     validate(...)
+        >>>     scheduler.step()
+    """
+
+    def __init__(self, dataloader: DataLoader, total_iters: int, power: float = 1.0,
+                 batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
+                 min_batch_size: int = 1, verbose: bool = False):
+        assert isinstance(total_iters, int) and total_iters > 1
+
+        self.total_iters = total_iters
+        self.power = power
+        super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
+
+    def get_bs(self) -> int:
+        """ Returns the next batch size as an :class:`int`.
+        From epoch 1 to total_iters - 1, the current batch size is multiplied by an increasing polynomial factor.
+        """
+        current_batch_size = self.get_current_batch_size()
+
+        if self.last_epoch == 0 or self.last_epoch >= self.total_iters:
+            self._finished = self.last_epoch > self.total_iters
+            return current_batch_size
+
+        factor = ((1.0 - (self.last_epoch - 1) / self.total_iters) / (
+                1.0 - self.last_epoch / self.total_iters)) ** self.power
+        return rint(current_batch_size * factor)
