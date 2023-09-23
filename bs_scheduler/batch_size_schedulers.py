@@ -164,10 +164,19 @@ class BSScheduler:
         if not hasattr(self.dataloader, '_base_batch_size'):
             self.dataloader._base_batch_size = self.get_current_batch_size()
         self._last_bs: int = self.dataloader._base_batch_size
+        self._finished: bool = False
         self.step()
+        # The initial step may make the scheduler to finish during initialization. So we reinitialize self._finished.
+        self._finished = False
+
+    def finished(self) -> bool:
+        """ Returns True if the scheduler has already finished its job or has exceeded the minimum or maximum batch
+        size. Otherwise, returns False.
+        """
+        return self._finished
 
     def state_dict(self) -> dict:
-        """Returns the state of the scheduler as a :class:`dict`.
+        """ Returns the state of the scheduler as a :class:`dict`.
 
         It contains an entry for every variable in self.__dict__ which is not the dataloader.
         """
@@ -204,8 +213,14 @@ class BSScheduler:
         # TODO: Check how the dataloader behaves if we change the batch size mid epoch. Write a guideline for this.
         #  Changing the batch size does not impact batch sizes loaded by workers before the change.
         # TODO: Check if changing the batch size needs locking. Because of multiprocessing. Normally it should not.
+        if self.finished():
+            return  # Stops doing work if already finished.
+
         self.last_epoch += 1
-        new_bs = max(min(self.get_bs(), self.max_batch_size), self.min_batch_size)  # Clip new_bs. Clearer than if elif.
+        new_bs = self.get_bs()
+        if not self.min_batch_size <= new_bs <= self.max_batch_size:
+            self._finished = True
+            new_bs = max(min(new_bs, self.max_batch_size), self.min_batch_size)
         self.set_batch_size(new_bs)
         self.print_bs(new_bs)
         self._last_bs = new_bs
@@ -507,6 +522,7 @@ class ConstantBS(BSScheduler):
         if self.last_epoch != self.milestone:
             return current_batch_size
 
+        self._finished = True  # My job is done.
         return rint(current_batch_size * (1.0 / self.factor))
 
 
@@ -566,6 +582,7 @@ class LinearBS(BSScheduler):
         current_batch_size = self.get_current_batch_size()
 
         if self.last_epoch > self.milestone:
+            self._finished = True  # My job is done.
             return current_batch_size
 
         if self.last_epoch == 0:
@@ -706,16 +723,26 @@ class SequentialBS(BSScheduler):
         # Do the initial step again, but only for the first scheduler.
         self.schedulers[0].step()
 
+    def finished(self) -> bool:
+        """ Returns True if all the schedulers have already finished their job or have exceeded the minimum or maximum
+        batch size. Otherwise, returns False.
+        """
+        # The last milestone was reached and the last scheduler is finished.
+        self._finished = self.last_epoch > self.milestones[-1] and self.schedulers[-1].finished()
+        return self._finished
+
     def step(self):
         """ Performs the step method for each scheduler until a milestone point is reached and a new scheduler is to be
         used. The new scheduler is used as if it is called for the first time.
         """
-        self.last_epoch += 1
-        if self.last_epoch == 0:
+        self.last_epoch += 1  # We still increase last_epoch, even though the scheduler has finished its job. It should
+        # not really matter. 
+        if self.last_epoch == 0 or self.finished():
             return
         i = bisect_right(self.milestones, self.last_epoch)
         scheduler = self.schedulers[i]
         if i > 0 and self.milestones[i - 1] == self.last_epoch:
             scheduler.last_epoch = 0
-        scheduler.step()
-        self._last_bs = scheduler.get_last_bs()
+        if not scheduler.finished():
+            scheduler.step()
+            self._last_bs = scheduler.get_last_bs()

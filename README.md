@@ -13,7 +13,7 @@ For Release Notes, see TODO.
 
 TODO: Cite papers and explain why.
 
-## Available Batch Size Schedulers
+## Available Schedulers
 
 TODO.
 
