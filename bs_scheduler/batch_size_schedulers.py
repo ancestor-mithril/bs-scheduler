@@ -64,16 +64,10 @@ class DefaultBatchSizeManager(BatchSizeManager):
     def set_batch_size(self, new_bs: int):
         """ Sets the new value of the batch size, which is owned by the batch sampler.
 
-        (!) Setting dataloader.batch_size raises a :class:`ValueError`. For now, we do not modify it, but we may need
-        to.
-
         Args:
             new_bs (int): The new batch sizes that needs to be set.
         """
         self.dataloader.batch_sampler.batch_size = new_bs
-
-        # TODO: changing self.dataloader.batch_size raises an error. Maybe change the __setattr__ temporarily using
-        #  a weak ref or sth
 
 
 class CustomBatchSizeManager(BatchSizeManager):
@@ -155,9 +149,8 @@ class BSScheduler:
             # dataset.
             self.batch_size_manager: BatchSizeManager = CustomBatchSizeManager(self.dataloader.dataset)
 
-        # Taking over the batch size manager methods for easier batch size getting&setting.
+        # Taking over the batch size manager methods for easier batch size getting.
         self.get_current_batch_size = self.batch_size_manager.get_current_batch_size
-        self.set_batch_size = self.batch_size_manager.set_batch_size
 
         # See https://pytorch.org/docs/stable/_modules/torch/optim/lr_scheduler.html for "with_counter".
         self.last_epoch: int = -1
@@ -168,6 +161,19 @@ class BSScheduler:
         self.step()
         # The initial step may make the scheduler to finish during initialization. So we reinitialize self._finished.
         self._finished = False
+
+    def set_batch_size(self, new_bs: int):
+        """ Forwards the call for setting the new batch size to the batch size manager. If the dataloader batch_size
+        member variable is not None, it also modifies it to reflect the change in batch size.
+
+        Args:
+            new_bs (int): The new batch sizes that needs to be set.
+        """
+        if self.dataloader.batch_size is not None:
+            # We can't directly do `dataloader.batch_size` = new_bs because the dataloader raises an error if we change
+            # the batch size after initialization. But we are still hacking around it.
+            self.dataloader.__dict__['batch_size'] = new_bs
+        self.batch_size_manager.set_batch_size(new_bs)
 
     def finished(self) -> bool:
         """ Returns True if the scheduler has already finished its job or has exceeded the minimum or maximum batch
@@ -736,7 +742,7 @@ class SequentialBS(BSScheduler):
         used. The new scheduler is used as if it is called for the first time.
         """
         self.last_epoch += 1  # We still increase last_epoch, even though the scheduler has finished its job. It should
-        # not really matter. 
+        # not really matter.
         if self.last_epoch == 0 or self.finished():
             return
         i = bisect_right(self.milestones, self.last_epoch)
