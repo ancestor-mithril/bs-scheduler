@@ -257,8 +257,8 @@ class LambdaBS(BSScheduler):
         bs_lambda (Union[Callable[[int], float], Callable[[int, ...], float]]): A function which computes a
             multiplicative factor given an integer parameter epoch. The function may accept an additional argument,
             if a keyword argument named `bs_lambda` is passed to the step() function. However, the function must 
-            have a default value for the additional parameter as it is called once only with the epoch parameter during 
-            initialization.
+            have a default value for the additional parameter in order to be able to be used both when passing and not
+            passing the `bs_lambda` keyword argumet to the step() function.
         batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
             which provides a getter and setter for the batch size. Default: None.
         max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
@@ -333,8 +333,8 @@ class MultiplicativeBS(BSScheduler):
         bs_lambda (Union[Callable[[int], float], Callable[[int, ...], float]]): A function which computes a
             multiplicative factor given an integer parameter epoch. The function may accept an additional argument,
             if a keyword argument named `bs_lambda` is passed to the step() function. However, the function must 
-            have a default value for the additional parameter as it is called once only with the epoch parameter during 
-            initialization.
+            have a default value for the additional parameter in order to be able to be used both when passing and not
+            passing the `bs_lambda` keyword argumet to the step() function.
         batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
             which provides a getter and setter for the batch size. Default: None.
         max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
