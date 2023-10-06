@@ -9,7 +9,8 @@ from typing import Callable, Union, Sequence, Tuple
 from torch.utils.data import DataLoader, Dataset
 
 __all__ = ['LambdaBS', 'MultiplicativeBS', 'StepBS', 'MultiStepBS', 'ConstantBS', 'LinearBS', 'ExponentialBS',
-           'SequentialBS', 'PolynomialBS', 'CosineAnnealingBS', 'ChainedBSScheduler', 'BSScheduler', 'BatchSizeManager']
+           'SequentialBS', 'PolynomialBS', 'CosineAnnealingBS', 'ChainedBSScheduler', 'IncreaseBSOnPlateau',
+           'BSScheduler', 'BatchSizeManager']
 
 
 def rint(x: float) -> int:
@@ -218,7 +219,7 @@ class BSScheduler:
         """
         return self._last_bs
 
-    def get_bs(self, **kwargs) -> int:
+    def get_new_bs(self, **kwargs) -> int:
         """ Computes the next batch size. Should not be called explicitly in client code, but it doesn't really matter
         if the client does so. Some batch size schedulers use the keyword arguments.
         """
@@ -237,7 +238,7 @@ class BSScheduler:
             return  # Stops doing work if already finished.
 
         self.last_epoch += 1
-        new_bs = self.get_bs(**kwargs)
+        new_bs = self.get_new_bs(**kwargs)
         if not self.min_batch_size <= new_bs <= self.max_batch_size:
             self._finished = True
             new_bs = clip(new_bs, min=self.min_batch_size, max=self.max_batch_size)
@@ -255,7 +256,9 @@ class LambdaBS(BSScheduler):
         dataloader (DataLoader): Wrapped dataloader.
         bs_lambda (Union[Callable[[int], float], Callable[[int, ...], float]]): A function which computes a
             multiplicative factor given an integer parameter epoch. The function may accept an additional argument,
-            if a keyword argument named `bs_lambda` is passed to the step() function.
+            if a keyword argument named `bs_lambda` is passed to the step() function. However, the function must 
+            have a default value for the additional parameter as it is called once only with the epoch parameter during 
+            initialization.
         batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
             which provides a getter and setter for the batch size. Default: None.
         max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
@@ -287,7 +290,7 @@ class LambdaBS(BSScheduler):
         It contains an entry for every variable in self.__dict__ which is not the dataloader. The batch size lambda
         function will only be saved if they are callable objects and not if they are functions or lambdas.
         """
-        state_dict = super().state_dict()  # TODO: Check if this works.
+        state_dict = {key: value for key, value in self.__dict__.items() if key not in ('dataloader', 'bs_lambda')}
         state_dict['bs_lambda'] = None
         if not isinstance(self.bs_lambda, types.FunctionType):
             self.bs_lambda.__dict__.copy()
@@ -304,7 +307,7 @@ class LambdaBS(BSScheduler):
         if bs_lambda is not None:
             self.bs_lambda.__dict__.update(bs_lambda)
 
-    def get_bs(self, **kwargs) -> int:
+    def get_new_bs(self, **kwargs) -> int:
         """ Returns the next batch size as an :class:`int`. It is calculated as the initial value of the batch size
         times the factor returned by `bs_lambda`.
 
@@ -329,7 +332,9 @@ class MultiplicativeBS(BSScheduler):
         dataloader (DataLoader): Wrapped dataloader.
         bs_lambda (Union[Callable[[int], float], Callable[[int, ...], float]]): A function which computes a
             multiplicative factor given an integer parameter epoch. The function may accept an additional argument,
-            if a keyword argument named `bs_lambda` is passed to the step() function.
+            if a keyword argument named `bs_lambda` is passed to the step() function. However, the function must 
+            have a default value for the additional parameter as it is called once only with the epoch parameter during 
+            initialization.
         batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
             which provides a getter and setter for the batch size. Default: None.
         max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
@@ -361,7 +366,7 @@ class MultiplicativeBS(BSScheduler):
         It contains an entry for every variable in self.__dict__ which is not the dataloader. The batch size lambda
         function will only be saved if they are callable objects and not if they are functions or lambdas.
         """
-        state_dict = super().state_dict()
+        state_dict = {key: value for key, value in self.__dict__.items() if key not in ('dataloader', 'bs_lambda')}
         state_dict['bs_lambda'] = None
         if not isinstance(self.bs_lambda, types.FunctionType):
             self.bs_lambda.__dict__.copy()
@@ -378,7 +383,7 @@ class MultiplicativeBS(BSScheduler):
         if bs_lambda is not None:
             self.bs_lambda.__dict__.update(bs_lambda)
 
-    def get_bs(self, **kwargs) -> int:
+    def get_new_bs(self, **kwargs) -> int:
         """ Returns the next batch size as an :class:`int`. It is calculated as the current value of the batch size
         times the factor returned by `bs_lambda`.
 
@@ -433,7 +438,7 @@ class StepBS(BSScheduler):
         self.gamma: float = gamma
         super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
 
-    def get_bs(self, **kwargs) -> int:
+    def get_new_bs(self, **kwargs) -> int:
         """ Returns the next batch size as an :class:`int`. It returns the current batch size times gamma each
         step_size epochs, otherwise it returns the current batch size.
 
@@ -484,7 +489,7 @@ class MultiStepBS(BSScheduler):
         self.gamma: float = gamma
         super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
 
-    def get_bs(self, **kwargs) -> int:
+    def get_new_bs(self, **kwargs) -> int:
         """ Returns the next batch size as an :class:`int`. It returns the current batch size times gamma each epoch a
         milestone is reached, otherwise it returns the current batch size. Beware that in the event of multiple
         milestones with the same value, the current batch size is multiplied with gamma multiple times.
@@ -541,7 +546,7 @@ class ConstantBS(BSScheduler):
         self.milestone: int = milestone
         super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
 
-    def get_bs(self, **kwargs) -> int:
+    def get_new_bs(self, **kwargs) -> int:
         """ Returns the next batch size as an :class:`int`. The value of the batch size is changed once at
         initialization, when the batch size is multiplied with the given factor, and twice when the milestone is
         reached and the batch size is multiplied with the inverse of the given factor. The factor is adjusted during
@@ -613,7 +618,7 @@ class LinearBS(BSScheduler):
         self.milestone: int = milestone
         super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
 
-    def get_bs(self, **kwargs) -> int:
+    def get_new_bs(self, **kwargs) -> int:
         """ Returns the next batch size as an :class:`int`. The current batch size is multiplied by the linear changing
         factor, starting from start_factor to end_factor. After the milestone is reached, the batch size is not changed
         anymore.
@@ -669,7 +674,7 @@ class ExponentialBS(BSScheduler):
         self.gamma: float = gamma
         super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
 
-    def get_bs(self, **kwargs) -> int:
+    def get_new_bs(self, **kwargs) -> int:
         """ Returns the next batch size as an :class:`int`. The current batch size is multiplied by gamma each epoch
         except the first one.
 
@@ -769,8 +774,9 @@ class SequentialBS(BSScheduler):
         """ Returns True if all the schedulers have already finished their job or have exceeded the minimum or maximum
         batch size. Otherwise, returns False.
         """
-        # The last milestone was reached and the last scheduler is finished.
-        self._finished = self.last_epoch > self.milestones[-1] and self.schedulers[-1].finished
+        if not self._finished:
+            # The last milestone was reached and the last scheduler is finished.
+            self._finished = self.last_epoch > self.milestones[-1] and self.schedulers[-1].finished
         return self._finished
 
     def step(self, **kwargs):
@@ -819,6 +825,8 @@ class SequentialBS(BSScheduler):
         for i, s in enumerate(schedulers):
             self.schedulers[i].load_state_dict(s)
 
+        self.set_batch_size(self.last_bs)  # Setting the batch size to the last computed batch size.
+
 
 class PolynomialBS(BSScheduler):
     """ Increases the batch size using a polynomial function in the given total_iters. Unlike
@@ -862,7 +870,7 @@ class PolynomialBS(BSScheduler):
         self.power: float = power
         super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
 
-    def get_bs(self, **kwargs) -> int:
+    def get_new_bs(self, **kwargs) -> int:
         """ Returns the next batch size as an :class:`int`. From epoch 1 to total_iters - 1, the current batch size is
         multiplied by an increasing polynomial factor.
 
@@ -924,7 +932,7 @@ class CosineAnnealingBS(BSScheduler):
         self.total_iters: int = total_iters
         super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
 
-    def get_bs(self, **kwargs) -> int:
+    def get_new_bs(self, **kwargs) -> int:
         """ Returns the next batch size as an :class:`int`. Increases the batch size from base batch size to maximum
         batch size following a cyclic cosine curve. The implementation is equivalent to
         torch.optim.lr_scheduler.CosineAnnealingLR.get_lr() and instead of `eta_min` we use `self.max_batch_size` and
@@ -979,6 +987,7 @@ class ChainedBSScheduler(BSScheduler):
         >>>     validate(...)
         >>>     scheduler.step()
     """
+
     def __init__(self, schedulers: Sequence[BSScheduler]):
         assert isinstance(schedulers, (tuple, list)) and len(schedulers) > 1 and all(
             [isinstance(x, BSScheduler) for x in schedulers])
@@ -1051,6 +1060,9 @@ class ChainedBSScheduler(BSScheduler):
         for i, s in enumerate(schedulers):
             self.schedulers[i].load_state_dict(s)
 
+        self.set_batch_size(self.last_bs)  # Setting the batch size to the last computed batch size.
+
+
 class IncreaseBSOnPlateau(BSScheduler):
     """ The inverse of torch.optim.lr_scheduler.ReduceLROnPlateau.
     Increases the batch size when a metric has stopped improving. Models often benefit from increasing the batch size
@@ -1058,7 +1070,6 @@ class IncreaseBSOnPlateau(BSScheduler):
     given number of epochs, the batch size is increased.
     Unfortunately, this class is not compatible with the other batch size schedulers as its step() function needs to
     receive the metric value.
-    TODO: make IncreaseBSOnPlateau combine well with the other BS schedulers.
 
     Args:
         dataloader (DataLoader): Wrapped dataloader.
@@ -1088,8 +1099,9 @@ class IncreaseBSOnPlateau(BSScheduler):
         >>> for epoch in range(100):
         >>>     train(...)
         >>>     val_loss = validate(...)
-        >>>     scheduler.step(val_loss)
+        >>>     scheduler.step(metric=val_loss)
     """
+
     def __init__(self, dataloader: DataLoader, mode: str = 'min', factor: float = 2.0, patience: int = 10,
                  threshold: float = 1e-4, threshold_mode: str = 'rel', cooldown: int = 0,
                  batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
@@ -1107,15 +1119,20 @@ class IncreaseBSOnPlateau(BSScheduler):
         self.threshold: float = threshold
         self.threshold_mode: str = threshold_mode
         self.cooldown: int = cooldown
-        self.best = None
-        self.num_bad_epochs = None
-        self.mode_worse = torch.inf if mode == 'min' else -torch.inf
-        self.last_epoch = 0
+        self.cooldown_counter: int = 0
+        self.mode_worse: float = torch.inf if mode == 'min' else -torch.inf
+        self.best: float = self.mode_worse
+        self.num_bad_epochs: int = 0
+
+        self.last_epoch = 0  # setting last epoch to 0
 
         self._init_is_better(mode, threshold_mode)
         self._reset()
 
-    def in_cooldown(self):
+    @property
+    def in_cooldown(self) -> bool:
+        """ Returns True if scheduler is in cooldown, False otherwise.
+        """
         return self.cooldown_counter > 0
 
     def _reset(self):
@@ -1125,22 +1142,22 @@ class IncreaseBSOnPlateau(BSScheduler):
         self.num_bad_epochs = 0
 
     @staticmethod
-    def is_better_min_rel(a, best, threshold):
+    def is_better_min_rel(a: float, best: float, threshold: float) -> bool:
         return a < best * (1.0 - threshold)
+
     @staticmethod
-    def is_better_min_abs(a, best, threshold):
+    def is_better_min_abs(a: float, best: float, threshold: float) -> bool:
         return a < best - threshold
 
     @staticmethod
-    def is_better_max_rel(a, best, threshold):
+    def is_better_max_rel(a: float, best: float, threshold: float) -> bool:
         return a > best * (1.0 + threshold)
 
     @staticmethod
-    def is_better_max_abs(a, best, threshold):
+    def is_better_max_abs(a: float, best: float, threshold: float) -> bool:
         return a > best + threshold
 
-
-    def _init_is_better(self, mode, threshold_mode):
+    def _init_is_better(self, mode: str, threshold_mode: str):
         if mode not in ('min', 'max'):
             raise ValueError(f'Mode {mode} is unknown!')
         if threshold_mode not in ('rel', 'abs'):
@@ -1155,17 +1172,21 @@ class IncreaseBSOnPlateau(BSScheduler):
         else:  # mode == 'min' and threshold_mode == 'abs':
             self.is_better = self.is_better_max_abs
 
-
-    def get_bs(self, **kwargs) -> int:
-        """
+    def get_new_bs(self, **kwargs) -> int:
+        """ Returns the next batch size as an :class:`int`. Receives a metric and increases the batch size by a give
+        factor if the metric has not been improved for `patience` epochs. After increasing the batch size, the
+        scheduler goes through a cooldown period in which bad epochs are ignored.
 
         Args:
             **kwargs: All keyword arguments except 'metric' are ignored. The keyword 'metric' must be passed to the
                 step() function, otherwise an error would be raised.
         """
+        if self.last_epoch == 0:  # Don't do anything at initialization.
+            return self.batch_size
+
         metric = kwargs.pop('metric', None)
-        if metric is None:
-            raise ValueError(f"IncreaseBSOnPlateau requires passing a 'metric' keyword argument.")
+        assert metric is not None, \
+            "IncreaseBSOnPlateau requires passing a 'metric' keyword argument in the step() function."
 
         current = float(metric)
         if self.is_better(current, self.best, self.threshold):
@@ -1174,8 +1195,8 @@ class IncreaseBSOnPlateau(BSScheduler):
         else:
             self.num_bad_epochs += 1
 
-        if self.in_cooldown():
-            self.cooldown_counter -= 0
+        if self.in_cooldown:
+            self.cooldown_counter -= 1
             self.num_bad_epochs = 0  # ignore any bad epochs in cooldown.
 
         if self.num_bad_epochs > self.patience:
@@ -1186,5 +1207,10 @@ class IncreaseBSOnPlateau(BSScheduler):
         return self.batch_size
 
     def load_state_dict(self, state_dict: dict):
-        self.__dict__.update(state_dict)
+        """ Loads the schedulers state.
+
+        Args:
+            state_dict (dict): scheduler state. Should be an object returned from a call to :meth:`state_dict`.
+        """
+        super().load_state_dict(state_dict)
         self._init_is_better(self.mode, self.threshold_mode)
