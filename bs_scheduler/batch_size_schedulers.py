@@ -3,12 +3,12 @@ import math
 import types
 from bisect import bisect_right
 from collections import Counter
-from typing import Callable, Union, Sequence
+from typing import Callable, Union, Sequence, Tuple
 
 from torch.utils.data import DataLoader, Dataset
 
 __all__ = ['LambdaBS', 'MultiplicativeBS', 'StepBS', 'MultiStepBS', 'ConstantBS', 'LinearBS', 'ExponentialBS',
-           'SequentialBS', 'PolynomialBS', 'CosineAnnealingBS', 'BSScheduler', 'BatchSizeManager']
+           'SequentialBS', 'PolynomialBS', 'CosineAnnealingBS', 'ChainedBSScheduler', 'BSScheduler', 'BatchSizeManager']
 
 
 def rint(x: float) -> int:
@@ -733,8 +733,8 @@ class SequentialBS(BSScheduler):
 
         self.set_batch_size(self.dataloader._base_batch_size)  # Set the batch size back to initial value.
 
-        self.schedulers = schedulers
-        self.milestones = milestones
+        self.schedulers: Tuple[BSScheduler, ...] = tuple(schedulers)
+        self.milestones: Tuple[int, ...] = tuple(milestones)
         # Do the initial step again, but only for the first scheduler.
         self.schedulers[0].step()
 
@@ -918,3 +918,98 @@ class CosineAnnealingBS(BSScheduler):
                              current_batch_size - self.max_batch_size) + self.max_batch_size
 
         return clip(rint(new_bs), min=base_batch_size, max=self.max_batch_size)
+
+
+class ChainedBSScheduler(BSScheduler):
+    """ Similar to torch.optim.lr_scheduler.ChainedScheduler.
+    Chains a list of batch size schedulers. It takes the list of batch size schedulers and performs consucutive
+    step() functions belonging to them by just one call
+
+    Args:
+        schedulers (Sequence[BSScheduler]): List of chained schedulers.
+    Example:
+        >>> dataloader = ...
+        >>> # Assuming the base batch size is 10.
+        >>> # bs = 100 if epoch == 0
+        >>> # bs = 110 if epoch == 1
+        >>> # bs = 121 if epoch == 2
+        >>> # bs = 133 if epoch == 3
+        >>> # bs = 14 if epoch == 4
+        >>> # bs = 15 if epoch == 5
+        >>> # bs = 16 if epoch == 6
+        >>> # bs = 18 if epoch == 7
+        >>> # ...
+        >>> scheduler1 = ConstantBS(dataloader, factor=10, milestone=4)
+        >>> scheduler2 = ExponentialBS(dataloader, gamma=1.1)
+        >>> scheduler = ChainedBSScheduler([scheduler1, scheduler2])
+        >>> for epoch in range(100):
+        >>>     train(...)
+        >>>     validate(...)
+        >>>     scheduler.step()
+    """
+
+    def __init__(self, schedulers: Sequence[BSScheduler]):
+        assert isinstance(schedulers, (tuple, list)) and len(schedulers) > 1 and all(
+            [isinstance(x, BSScheduler) for x in schedulers])
+
+        dataloader: DataLoader = schedulers[0].dataloader
+        batch_size_manger: BatchSizeManager = schedulers[0].batch_size_manager
+        for i in range(1, len(schedulers)):
+            if schedulers[i].dataloader != dataloader:
+                raise ValueError(f"ChainedBSScheduler expects all schedulers to belong to the same dataloader, but got "
+                                 f"scheduler at index {i} to be different than the scheduler at index 0.")
+            if not isinstance(schedulers[i].batch_size_manager, type(batch_size_manger)):
+                raise ValueError(
+                    f"ChainedBSScheduler expects all schedulers to have the same batch size manager, but got "
+                    f"scheduler at index {i} to have a different batch size manager. Expected type of "
+                    f"batch size manager: {type(batch_size_manger).__name__}, got: "
+                    f"{type(schedulers[i].batch_size_manager).__name__}.")
+            # We do not require equality for min_batch_size and max_batch_size, but maybe we should.
+
+        self.dataloader: DataLoader = dataloader
+        self.batch_size_manager: BatchSizeManager = batch_size_manger
+        self.schedulers: Tuple[BSScheduler, ...] = tuple(schedulers)
+        self._last_bs: int = self.schedulers[-1].get_last_bs()
+        self.max_batch_size: int = self.schedulers[-1].max_batch_size
+        self.min_batch_size: int = self.schedulers[-1].min_batch_size
+        self.get_current_batch_size: Callable[[], int] = self.schedulers[-1].get_current_batch_size
+        self._finished: bool = False
+
+    def step(self):
+        for scheduler in self.schedulers:
+            scheduler.step()
+        self._last_bs = self.schedulers[-1].get_last_bs()
+
+    def finished(self) -> bool:
+        """ Returns True if all the schedulers have already finished their job or have exceeded the minimum or maximum
+        batch size. Otherwise, returns False.
+        """
+        self._finished = all([x.finished() for x in self.schedulers])
+        return self._finished
+
+    def state_dict(self) -> dict:
+        """ Returns the state of the scheduler as a :class:`dict`.
+
+        It contains an entry for every variable in self.__dict__ which is not the dataloader. The wrapped scheduler
+        stares will also be saved.
+        """
+        state_dict = {key: value for key, value in self.__dict__.items() if key not in ('dataloader', 'schedulers')}
+        state_dict['schedulers'] = [None] * len(self.schedulers)
+
+        for i, s in enumerate(self.schedulers):
+            state_dict['schedulers'][i] = s.state_dict()
+
+        return state_dict
+
+    def load_state_dict(self, state_dict: dict):
+        """ Loads the schedulers state.
+
+        Args:
+            state_dict (dict): scheduler state. Should be an object returned from a call to :meth:`state_dict`.
+        """
+        schedulers = state_dict.pop('schedulers')
+        self.__dict__.update(state_dict)
+
+        state_dict['schedulers'] = schedulers
+        for i, s in enumerate(schedulers):
+            self.schedulers[i].load_state_dict(s)

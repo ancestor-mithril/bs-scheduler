@@ -16,7 +16,6 @@ class TestSequentialBS(BSTest):
         # TODO: Check that SequentialBS throws errors when it should.
 
     def test_dataloader_lengths(self):
-        # TODO: torch.optim.lr_scheduler.SequentialLR might be wrong: test it.
         base_batch_size = 10
         dataloader = create_dataloader(self.dataset, batch_size=base_batch_size)
         scheduler1 = ConstantBS(dataloader, factor=10, milestone=4)
