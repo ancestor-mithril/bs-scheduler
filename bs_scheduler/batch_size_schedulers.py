@@ -1,5 +1,6 @@
 # Inspired from https://pytorch.org/docs/stable/_modules/torch/optim/lr_scheduler.html.
 import math
+import torch
 import types
 from bisect import bisect_right
 from collections import Counter
@@ -1013,3 +1014,151 @@ class ChainedBSScheduler(BSScheduler):
         state_dict['schedulers'] = schedulers
         for i, s in enumerate(schedulers):
             self.schedulers[i].load_state_dict(s)
+
+class IncreaseBSOnPlateau(BSScheduler):
+    """ The inverse of torch.optim.lr_scheduler.ReduceLROnPlateau.
+    Increases the batch size when a metric has stopped improving. Models often benefit from increasing the batch size
+    by a factor once the learning stagnates. This scheduler receives a metric value and if no improvement is seen for a
+    given number of epochs, the batch size is increased.
+    Unfortunately, this class is not compatible with the other batch size schedulers as its step() function needs to
+    receive the metric value.
+    TODO: make IncreaseBSOnPlateau combine well with the other BS schedulers.
+
+    Args:
+        dataloader (DataLoader): Wrapped dataloader.
+        mode (str): One of `min`, `max`. In `min` mode, the batch size will be increased when the metric value has
+            stopped decreasing; in `max` mode, the batch size will be increased when the metric value has stopped
+            increasing. Default: 'min'.
+        factor (float): Factor by which the batch size will be increased. Default: 2.0.
+        patience (int): Number of epochs with no improvement after which the batch size will be increased. Default: 10.
+        threshold (float): Threshold for measuring the new metric value, to only focus on significant changes.
+            Default: 1e-4.
+        threshold_mode (str): One of `rel`, `abs`. In `rel` mode, dynamic_threshold = best * ( 1 + threshold ) in 'max'
+            mode or best * ( 1 - threshold ) in `min` mode. In `abs` mode, dynamic_threshold = best + threshold in 'max'
+            mode or best - threshold in `min` mode. Default: 'rel'.
+        cooldown (int): Number of epochs to wait before resuming normal operation after the batch size has been reduced.
+            Default: 0.
+        batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
+            which provides a getter and setter for the batch size. Default: None.
+        max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
+            in the memory. If None or greater than the lenght of the dataset wrapped by the dataloader, max_batch_size
+            is set to `len(self.dataloader.dataset)`. Default: None.
+        min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
+        verbose (bool): If ``True``, prints a message to stdout for each update. Default: ``False``.
+
+    Example:
+        >>> dataloader = ...
+        >>> scheduler = IncreaseBSOnPlateau(dataloader)
+        >>> for epoch in range(100):
+        >>>     train(...)
+        >>>     val_loss = validate(...)
+        >>>     scheduler.step(val_loss)
+    """
+    def __init__(self, dataloader: DataLoader, mode: str = 'min', factor: float = 2.0, patience: int = 10,
+                 threshold: float = 1e-4, threshold_mode: str = 'rel', cooldown: int = 0,
+                 batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
+                 min_batch_size: int = 1, verbose: bool = False):
+        super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
+        assert isinstance(factor, float) and factor != 1.0 and factor >= 0.0
+        # Factor is expected to be greater than 1, but we do not forbid batch size decay.
+        assert isinstance(patience, int) and patience >= 0
+        assert isinstance(threshold, float) and threshold > 0.0
+        assert isinstance(cooldown, int) and cooldown >= 0
+
+        self.mode: str = mode
+        self.factor: float = factor
+        self.patience: int = patience
+        self.threshold: float = threshold
+        self.threshold_mode: str = threshold_mode
+        self.cooldown: int = cooldown
+        self.best = None
+        self.num_bad_epochs = None
+        self.mode_worse = torch.inf if mode == 'min' else -torch.inf
+        self.last_epoch = 0
+
+        self._init_is_better(mode, threshold_mode)
+        self._reset()
+
+    def in_cooldown(self):
+        return self.cooldown_counter > 0
+
+    def _reset(self):
+        """ Resets num_bad_epochs counter and cooldown counter."""
+        self.best = self.mode_worse
+        self.cooldown_counter = 0
+        self.num_bad_epochs = 0
+
+    @staticmethod
+    def is_better_min_rel(a, best, threshold):
+        return a < best * (1.0 - threshold)
+    @staticmethod
+    def is_better_min_abs(a, best, threshold):
+        return a < best - threshold
+
+    @staticmethod
+    def is_better_max_rel(a, best, threshold):
+        return a > best * (1.0 + threshold)
+
+    @staticmethod
+    def is_better_max_abs(a, best, threshold):
+        return a > best + threshold
+
+
+    def _init_is_better(self, mode, threshold_mode):
+        if mode not in ('min', 'max'):
+            raise ValueError(f'Mode {mode} is unknown!')
+        if threshold_mode not in ('rel', 'abs'):
+            raise ValueError(f'Threshold mode {mode} is unknown!')
+
+        if mode == 'min' and threshold_mode == 'rel':
+            self.is_better = self.is_better_min_rel
+        elif mode == 'min' and threshold_mode == 'abs':
+            self.is_better = self.is_better_min_abs
+        elif mode == 'max' and threshold_mode == 'rel':
+            self.is_better = self.is_better_max_rel
+        else:  # mode == 'min' and threshold_mode == 'abs':
+            self.is_better = self.is_better_max_abs
+
+
+    def get_bs(self, metric) -> int:
+        """
+        TODO
+        """
+        current = float(metric)
+        current_batch_size = self.get_current_batch_size()
+        if self.is_better(current, self.best, self.threshold):
+            self.best = current
+            self.num_bad_epochs = 0
+        else:
+            self.num_bad_epochs += 1
+
+        if self.in_cooldown():
+            self.cooldown_counter -= 0
+            self.num_bad_epochs = 0  # ignore any bad epochs in cooldown.
+
+        if self.num_bad_epochs > self.patience:
+            self.cooldown_counter = self.cooldown
+            self.num_bad_epochs = 0
+            return rint(current_batch_size * self.factor)
+
+        return current_batch_size
+
+
+    def step(self, metric: float):
+        if self.finished():
+            return  # Stops doing work if already finished.
+
+        previous_batch_size = self.get_current_batch_size()
+        self.last_epoch += 1
+        new_bs = self.get_bs(metric)
+        if not self.min_batch_size <= new_bs <= self.max_batch_size:
+            self._finished = True
+            new_bs = clip(new_bs, min=self.min_batch_size, max=self.max_batch_size)
+        self.set_batch_size(new_bs)
+        if new_bs != previous_batch_size:
+            self.print_bs(new_bs)
+        self._last_bs = new_bs
+
+    def load_state_dict(self, state_dict: dict):
+        self.__dict__.update(state_dict)
+        self._init_is_better(self.mode, self.threshold_mode)
