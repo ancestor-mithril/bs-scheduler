@@ -11,6 +11,7 @@ class TestMultiplicativeBS(BSTest):
         self.dataset = fashion_mnist()
         # TODO: Test multiple dataloaders: dataloader with workers, dataloaders with samplers, with drop last and
         #  without drop last and so on.
+        # TODO: Test lambda with argument.
 
     @staticmethod
     def compute_expected_batch_sizes(epochs, base_batch_size, fn, min_batch_size, max_batch_size):
