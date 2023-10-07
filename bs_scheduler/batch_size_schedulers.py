@@ -1,6 +1,8 @@
 # Inspired from https://pytorch.org/docs/stable/_modules/torch/optim/lr_scheduler.html.
 import inspect
 import math
+from functools import partial
+
 import torch
 import types
 from bisect import bisect_right
