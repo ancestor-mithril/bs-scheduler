@@ -38,6 +38,17 @@ class TestConstantBS(BSTest):
 
         self.assertEqual(batch_sizes, expected_batch_sizes)
 
+    def test_loading_and_unloading(self):
+        dataloader = create_dataloader(self.dataset)
+        factor = 5.0
+        milestone = 5
+        scheduler = ConstantBS(dataloader, factor=factor, milestone=milestone, max_batch_size=100, verbose=True)
+
+        self.loading_and_unloading(scheduler)
+        self.torch_save_and_load(scheduler)
+        scheduler.step()
+        self.assertTrue(scheduler.verbose)
+
 
 if __name__ == "__main__":
     from multiprocessing import freeze_support

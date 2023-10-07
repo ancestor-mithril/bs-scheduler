@@ -40,6 +40,18 @@ class TestChainedBSScheduler(BSTest):
 
         self.assertEqual(batch_sizes, expected_batch_sizes)
 
+    def test_loading_and_unloading(self):
+        dataloader = create_dataloader(self.dataset)
+        factor = 10
+        scheduler1 = ConstantBS(dataloader, factor=factor, milestone=4)
+        scheduler2 = ExponentialBS(dataloader, gamma=1.1)
+        scheduler = ChainedBSScheduler([scheduler1, scheduler2])
+
+        self.loading_and_unloading(scheduler)
+        self.torch_save_and_load(scheduler)
+        scheduler.step()
+        self.assertEqual(scheduler.schedulers[0].factor, factor)
+
 
 if __name__ == "__main__":
     from multiprocessing import freeze_support

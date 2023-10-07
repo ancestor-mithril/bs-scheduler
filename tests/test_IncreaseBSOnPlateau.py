@@ -49,6 +49,18 @@ class TestIncreaseBSOnPlateau(BSTest):
         # TODO: Test threshold mode and mode
         # TODO: Test cooldown
 
+    def test_loading_and_unloading(self):
+        dataloader = create_dataloader(self.dataset)
+        mode = 'min'
+        threshold_mode = 'rel'
+        scheduler = IncreaseBSOnPlateau(dataloader, mode=mode, threshold_mode=threshold_mode)
+
+        self.loading_and_unloading(scheduler)
+        self.torch_save_and_load(scheduler)
+        scheduler.step(metric=10)
+        self.assertEqual(scheduler.mode, mode)
+        self.assertEqual(scheduler.threshold_mode, threshold_mode)
+
 
 if __name__ == "__main__":
     from multiprocessing import freeze_support

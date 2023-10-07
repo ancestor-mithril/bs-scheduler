@@ -94,6 +94,19 @@ class TestSequentialBS(BSTest):
             SequentialBS(dataloader, schedulers=[other_scheduler, scheduler2, scheduler3], milestones=[5, 10],
                          max_batch_size=100)
 
+    def test_loading_and_unloading(self):
+        dataloader = create_dataloader(self.dataset)
+        factor = 10
+        scheduler1 = ConstantBS(dataloader, factor=factor, milestone=4)
+        scheduler2 = ExponentialBS(dataloader, gamma=2, verbose=False)
+        scheduler = SequentialBS(dataloader, schedulers=[scheduler1, scheduler2], milestones=[5])
+
+        self.loading_and_unloading(scheduler)
+        self.torch_save_and_load(scheduler)
+        scheduler.step()
+        self.assertEqual(len(scheduler.schedulers), 2)
+        self.assertEqual(scheduler.schedulers[0].factor, factor)
+
 
 if __name__ == "__main__":
     from multiprocessing import freeze_support

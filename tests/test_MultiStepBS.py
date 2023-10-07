@@ -50,6 +50,17 @@ class TestMultiStepBS(BSTest):
 
         self.assertEqual(batch_sizes, expected_batch_sizes)
 
+    def test_loading_and_unloading(self):
+        dataloader = create_dataloader(self.dataset)
+        milestones = [5, 10, 10, 12]
+        gamma = 3.0
+        scheduler = MultiStepBS(dataloader, milestones=milestones, gamma=gamma, max_batch_size=5000, verbose=False)
+
+        self.loading_and_unloading(scheduler)
+        self.torch_save_and_load(scheduler)
+        scheduler.step()
+        self.assertEqual(scheduler.gamma, gamma)
+
 
 if __name__ == "__main__":
     from multiprocessing import freeze_support
