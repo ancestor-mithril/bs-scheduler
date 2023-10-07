@@ -36,9 +36,9 @@ def iterate(dataloader):
 def simulate_n_epochs(dataloader, scheduler, epochs):
     lengths = []
     if isinstance(epochs, (tuple, list)):
-        for metric in epochs:
+        for d in epochs:
             lengths.append(len(dataloader))
-            scheduler.step(metric=metric)
+            scheduler.step(**d)
     else:
         for _ in range(epochs):
             lengths.append(len(dataloader))
