@@ -735,6 +735,8 @@ class SequentialBS(BSScheduler):
                                  f"scheduler at index {i} to have a different batch size manager. Expected type of "
                                  f"batch size manager: {type(self.batch_size_manager).__name__}, got: "
                                  f"{type(schedulers[i].batch_size_manager).__name__}.")
+            # TODO: Do we really need to raise an excetion if the maximum batch size is different for each scheduler?
+            # Maybe not, maybe we should just use max() and min().
             if schedulers[i].max_batch_size != self.max_batch_size:
                 raise ValueError(f"SequentialBS expects all schedulers to have the same maximum batch size, but got "
                                  f"scheduler at index {i} to have a different maximum batch size. Expected "
@@ -884,7 +886,7 @@ class CosineAnnealingBS(BSScheduler):
         min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
         verbose (bool): If ``True``, prints a message to stdout for each update. Default: ``False``.
 
-    .. _SGDR\: Stochastic Gradient Descent with Warm Restarts: https://arxiv.org/abs/1608.03983
+    .. _SGDR\\: Stochastic Gradient Descent with Warm Restarts: https://arxiv.org/abs/1608.03983
 
     Example:
         >>> dataloader = ...
@@ -906,7 +908,7 @@ class CosineAnnealingBS(BSScheduler):
         >>>     scheduler.step()
     """
 
-    def __init__(self, dataloader: DataLoader, total_iters: int, power: float = 1.0,
+    def __init__(self, dataloader: DataLoader, total_iters: int,
                  batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
                  min_batch_size: int = 1, verbose: bool = False):
         assert isinstance(total_iters, int) and total_iters > 1
