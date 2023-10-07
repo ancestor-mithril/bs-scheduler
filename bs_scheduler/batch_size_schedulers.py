@@ -1195,3 +1195,64 @@ class IncreaseBSOnPlateau(BSScheduler):
         """
         super().load_state_dict(state_dict)
         self._init_is_better(self.mode, self.threshold_mode)
+
+
+class CyclicBS(BSScheduler):
+    """ Similar to torch.optim.lr_scheduler.CyclicLR. Sets the batch size according to a cyclical batch size policy,
+    inspired from the cyclical learning rate policy (CLR). The policy cycles the batch size between two boundaries with
+    a constant frequency, similar to the method detailed in the paper `Cyclical Learning Rates for Training Neural
+    Networks`_. The distance between the two boundaries can be scaled on a per-iteration or per-cycle basis.
+    TODO: Check the thing with per-iteration or per-cycle.
+
+    Cyclical batch size policy changes the batch size after every batch. The step() function should be called after a
+    batch has been used for training.
+
+    This class has three built-in policies, as put forth in the paper:
+    # TODO: Validate that all policies apply for us
+
+    * "triangular": A basic triangular cycle without amplitude scaling.
+    * "triangular2": A basic triangular cycle that scales initial amplitude by half each cycle.
+    * "exp_range": A cycle that scales initial amplitude by :math:`\\gamma^{\\text{cycle iterations}}` at each cycle
+        iteration.
+
+    This implementation was adapted from `pytorch/pytorch`_ which was adapted from the github repo: `bckenstler/CLR`_.
+
+    Args:
+        dataloader (DataLoader): Wrapped dataloader.
+        base_batch_size (float): Initial batch size which is the lower boundery in the cycle.
+        TODO: Do we really need it? Don't we already have base batch size?
+        upper_batch_size_bound (float): Upper batch size boundary in the cycle. Functionally, it defines the cycle
+            amplitude (upper_batch_size_bound - base_batch_size). The batch size at any cycle is the sum of
+            base_batch_size and some scaling of the amplitude; therefore, upper_batch_size_bound may not actually be
+            reached depending on scaling function.
+        # TODO: Do we really need it? Can't we just use max_batch_size?
+        step_size_up (int): Number of training iterations in the increasing half of a cycle. Default: 2000.
+        step_size_down (int): Number of training iterations in the decreasing half of a cycle. If step_size_down is
+            None, it is set to step_size_up. Default: None.
+        mode (str): One of `triangular`, `triangular`, `exp_range`. Values correspond to the policies detailed above.
+            If scale_fn is not None, this argument is ignored. Default: 'triangular'.
+        gamma (float): Constant in the 'exp_range' scaling function: gamma ** (cycle iterations). Default: 1.0.
+        scale_fn (function): Custom scaling policy defined by a single argument lambda function, where
+            0 <= scale_fn(x) <= 1 for all x >= 0. If specified, then 'mode' is ignored. Default: None.
+        scale_mode (str): One of 'cycle', 'iterations'. Defines whether scale_fn is evaluated on cycle number of cycle
+            iterations (training iterations since the start of the cycle). Default: 'cycle'.
+        batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
+            which provides a getter and setter for the batch size. Default: None.
+        max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
+            in the memory. If None or greater than the lenght of the dataset wrapped by the dataloader, max_batch_size
+            is set to `len(self.dataloader.dataset)`. Default: None.
+        min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
+        verbose (bool): If ``True``, prints a message to stdout for each update. Default: ``False``.
+
+    Example:
+        >>> dataloader = ...
+        >>> scheduler = CyclicBS(dataloader)
+        >>> for epoch in range(100):
+        >>>     for batch in dataloader:
+        >>>         train_batch(...)
+        >>>         scheduler.step()
+
+    .. _Cyclical Learning Rates for Training Neural Networks: https://arxiv.org/abs/1506.01186
+    .. _pytorch/pytorch: https://github.com/pytorch/pytorch
+    .. _bckenstler/CLR: https://github.com/bckenstler/CLR
+    """
