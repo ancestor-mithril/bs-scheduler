@@ -167,6 +167,14 @@ class BSScheduler:
             self.dataloader._base_batch_size = self.batch_size
         self._last_bs: int = self.dataloader._base_batch_size
         self._finished: bool = False
+
+        # Setting the correct get_new_bs() dispatch function.
+        if inspect.getfullargspec(self.get_new_bs).varkw is None:
+            self._internal_get_new_bs = self._internal_bare_dispatch
+        else:
+            self._internal_get_new_bs = self._internal_kwargs_dispatch
+
+        # Doing the zero-th step.
         self.step()
         # The initial step may make the scheduler to finish during initialization. So we reinitialize self._finished.
         self._finished = False
@@ -220,11 +228,17 @@ class BSScheduler:
         """
         return self._last_bs
 
-    def get_new_bs(self, **kwargs) -> int:
+    def get_new_bs(self) -> int:
         """ Computes the next batch size. Should not be called explicitly in client code, but it doesn't really matter
         if the client does so. Some batch size schedulers use the keyword arguments.
         """
         raise NotImplementedError
+
+    def _internal_bare_dispatch(self, **kwargs) -> int:
+        return self.get_new_bs()
+
+    def _internal_kwargs_dispatch(self, **kwargs) -> int:
+        return self.get_new_bs(**kwargs)
 
     def print_bs(self, new_bs):
         if self.verbose:
@@ -239,10 +253,7 @@ class BSScheduler:
             return  # Stops doing work if already finished.
 
         self.last_epoch += 1
-        if inspect.getfullargspec(self.get_new_bs).varkw is not None:
-            new_bs = self.get_new_bs(**kwargs)
-        else:
-            new_bs = self.get_new_bs()
+        new_bs = self._internal_get_new_bs(**kwargs)
         if not self.min_batch_size <= new_bs <= self.max_batch_size:
             self._finished = True
             new_bs = clip(new_bs, min=self.min_batch_size, max=self.max_batch_size)
