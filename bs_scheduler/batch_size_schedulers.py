@@ -90,12 +90,12 @@ class CustomBatchSizeManager(BatchSizeManager):
 
     def __init__(self, dataset: Dataset):
         check_isinstance(dataset, Dataset)
-        if not hasattr(dataset, "change_batch_size"):
+        if not hasattr(dataset, 'change_batch_size'):
             raise KeyError("Because the dataloader does not have a batch sampler, the dataset owns and controls the "
                            "batch size. In order to change the batch size after dataloader creation we require our "
                            "users to implement a Callable[[int],None] method named `change_batch_size` in their "
                            "dataset which changes the batch size. Please see TODO for examples.")
-        if not hasattr(dataset, "get_batch_size"):
+        if not hasattr(dataset, 'get_batch_size'):
             raise KeyError("We require our users to implement a Callable[[], int] method named `get_batch_size` in "
                            "their dataset which returns the current batch size. Please see TODO for examples. ")
         self.dataset = dataset
@@ -161,7 +161,6 @@ class BSScheduler:
             # dataset.
             self.batch_size_manager: BatchSizeManager = CustomBatchSizeManager(self.dataloader.dataset)
 
-        # See https://pytorch.org/docs/stable/_modules/torch/optim/lr_scheduler.html for "with_counter".
         self.last_epoch: int = -1
         if not hasattr(self.dataloader, '_base_batch_size'):
             self.dataloader._base_batch_size = self.batch_size
@@ -184,7 +183,8 @@ class BSScheduler:
 
         It contains an entry for every variable in self.__dict__ which is not the dataloader.
         """
-        return {key: value for key, value in self.__dict__.items() if key != 'dataloader'}
+        return {key: value for key, value in self.__dict__.items() if
+                key not in ('dataloader', '_internal_get_new_bs')}
 
     def load_state_dict(self, state_dict: dict):
         """ Loads the schedulers state.
@@ -195,6 +195,11 @@ class BSScheduler:
         self.__dict__.update(state_dict)
         # TODO: Test training, saving, loading and resuming scheduler. Ensure that the batch size is set correctly.
         self.set_batch_size(self.last_bs)  # Setting the batch size to the last computed batch size.
+        # Setting the correct get_new_bs() dispatch function.
+        if inspect.getfullargspec(self.get_new_bs).varkw is None:
+            self._internal_get_new_bs = self._internal_bare_dispatch
+        else:
+            self._internal_get_new_bs = self._internal_kwargs_dispatch
 
     def set_batch_size(self, new_bs: int):
         """ Forwards the call for setting the new batch size to the batch size manager. If the dataloader batch_size
@@ -302,10 +307,10 @@ class LambdaBS(BSScheduler):
         It contains an entry for every variable in self.__dict__ which is not the dataloader. The batch size lambda
         function will only be saved if they are callable objects and not if they are functions or lambdas.
         """
-        state_dict = {key: value for key, value in self.__dict__.items() if key not in ('dataloader', 'bs_lambda')}
+        state_dict = super().state_dict()
         state_dict['bs_lambda'] = None
         if not isinstance(self.bs_lambda, types.FunctionType):
-            self.bs_lambda.__dict__.copy()
+            state_dict['bs_lambda'] = self.bs_lambda.__dict__.copy()
         return state_dict
 
     def load_state_dict(self, state_dict: dict):
@@ -366,10 +371,10 @@ class MultiplicativeBS(BSScheduler):
         It contains an entry for every variable in self.__dict__ which is not the dataloader. The batch size lambda
         function will only be saved if they are callable objects and not if they are functions or lambdas.
         """
-        state_dict = {key: value for key, value in self.__dict__.items() if key not in ('dataloader', 'bs_lambda')}
+        state_dict = super().state_dict()
         state_dict['bs_lambda'] = None
         if not isinstance(self.bs_lambda, types.FunctionType):
-            self.bs_lambda.__dict__.copy()
+            state_dict['bs_lambda'] = self.bs_lambda.__dict__.copy()
         return state_dict
 
     def load_state_dict(self, state_dict: dict):
@@ -789,9 +794,9 @@ class SequentialBS(BSScheduler):
         """ Returns the state of the scheduler as a :class:`dict`.
 
         It contains an entry for every variable in self.__dict__ which is not the dataloader. The wrapped scheduler
-        stares will also be saved.
+        states will also be saved.
         """
-        state_dict = {key: value for key, value in self.__dict__.items() if key not in ('dataloader', 'schedulers')}
+        state_dict = super().state_dict()
         state_dict['schedulers'] = [None] * len(self.schedulers)
 
         for i, s in enumerate(self.schedulers):
@@ -1018,9 +1023,9 @@ class ChainedBSScheduler(BSScheduler):
         """ Returns the state of the scheduler as a :class:`dict`.
 
         It contains an entry for every variable in self.__dict__ which is not the dataloader. The wrapped scheduler
-        stares will also be saved.
+        states will also be saved.
         """
-        state_dict = {key: value for key, value in self.__dict__.items() if key not in ('dataloader', 'schedulers')}
+        state_dict = super().state_dict()
         state_dict['schedulers'] = [None] * len(self.schedulers)
 
         for i, s in enumerate(self.schedulers):
