@@ -466,12 +466,21 @@ class MultiStepBS(BSScheduler):
         self.gamma: float = gamma
         super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
 
+    @property
+    def finished(self) -> bool:
+        """ Returns True if the scheduler has already finished its job or has exceeded the minimum or maximum batch
+        size. Otherwise, returns False.
+        """
+        if not self._finished:
+            # Should we cache max(self.milestones)?
+            self._finished = self.last_epoch > max(self.milestones)
+        return self._finished
+
     def get_new_bs(self) -> int:
         """ Returns the next batch size as an :class:`int`. It returns the current batch size times gamma each epoch a
         milestone is reached, otherwise it returns the current batch size. Beware that in the event of multiple
         milestones with the same value, the current batch size is multiplied with gamma multiple times.
         """
-        # TODO: Set finished if max milestone was reached.
         if self.last_epoch not in self.milestones:
             return self.batch_size
         return rint(self.batch_size * self.gamma ** self.milestones[self.last_epoch])
