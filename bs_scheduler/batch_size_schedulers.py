@@ -12,7 +12,7 @@ from typing import Callable, Union, Sequence, Tuple
 from torch.utils.data import DataLoader, Dataset
 
 __all__ = ['LambdaBS', 'MultiplicativeBS', 'StepBS', 'MultiStepBS', 'ConstantBS', 'LinearBS', 'ExponentialBS',
-           'SequentialBS', 'PolynomialBS', 'CosineAnnealingBS', 'ChainedBSScheduler', 'IncreaseBSOnPlateau',
+           'SequentialBS', 'PolynomialBS', 'CosineAnnealingBS', 'ChainedBSScheduler', 'IncreaseBSOnPlateau', 'CyclicBS',
            'BSScheduler', 'BatchSizeManager']
 
 
@@ -169,11 +169,7 @@ class BSScheduler:
         self._last_bs: int = self.dataloader._base_batch_size
         self._finished: bool = False
 
-        # Setting the correct get_new_bs() dispatch function.
-        if inspect.getfullargspec(self.get_new_bs).varkw is None:
-            self._internal_get_new_bs = self._internal_bare_dispatch
-        else:
-            self._internal_get_new_bs = self._internal_kwargs_dispatch
+        self._init_get_new_bs()
 
         # Doing the zero-th step.
         self.step()
@@ -195,13 +191,8 @@ class BSScheduler:
             state_dict (dict): scheduler state. Should be an object returned from a call to :meth:`state_dict`.
         """
         self.__dict__.update(state_dict)
-        # TODO: Test training, saving, loading and resuming scheduler. Ensure that the batch size is set correctly.
         self.set_batch_size(self.last_bs)  # Setting the batch size to the last computed batch size.
-        # Setting the correct get_new_bs() dispatch function.
-        if inspect.getfullargspec(self.get_new_bs).varkw is None:
-            self._internal_get_new_bs = self._internal_bare_dispatch
-        else:
-            self._internal_get_new_bs = self._internal_kwargs_dispatch
+        self._init_get_new_bs()
 
     def set_batch_size(self, new_bs: int):
         """ Forwards the call for setting the new batch size to the batch size manager. If the dataloader batch_size
@@ -240,6 +231,13 @@ class BSScheduler:
         if the client does so. Some batch size schedulers use the keyword arguments.
         """
         raise NotImplementedError
+
+    def _init_get_new_bs(self):
+        # Setting the correct get_new_bs() dispatch function.
+        if inspect.getfullargspec(self.get_new_bs).varkw is None:
+            self._internal_get_new_bs = self._internal_bare_dispatch
+        else:
+            self._internal_get_new_bs = self._internal_kwargs_dispatch
 
     def _internal_bare_dispatch(self, **kwargs) -> int:
         return self.get_new_bs()
@@ -742,7 +740,7 @@ class SequentialBS(BSScheduler):
                                  f"scheduler at index {i} to have a different batch size manager. Expected type of "
                                  f"batch size manager: {type(self.batch_size_manager).__name__}, got: "
                                  f"{type(schedulers[i].batch_size_manager).__name__}.")
-            # TODO: Do we really need to raise an excetion if the maximum batch size is different for each scheduler?
+            # TODO: Do we really need to raise an error if the maximum batch size is different for each scheduler?
             # Maybe not, maybe we should just use max() and min().
             if schedulers[i].max_batch_size != self.max_batch_size:
                 raise ValueError(f"SequentialBS expects all schedulers to have the same maximum batch size, but got "
@@ -1209,13 +1207,11 @@ class CyclicBS(BSScheduler):
     inspired from the cyclical learning rate policy (CLR). The policy cycles the batch size between two boundaries with
     a constant frequency, similar to the method detailed in the paper `Cyclical Learning Rates for Training Neural
     Networks`_. The distance between the two boundaries can be scaled on a per-iteration or per-cycle basis.
-    TODO: Check the thing with per-iteration or per-cycle.
 
     Cyclical batch size policy changes the batch size after every batch. The step() function should be called after a
     batch has been used for training.
 
     This class has three built-in policies, as put forth in the paper:
-    # TODO: Validate that all policies apply for us
 
     * "triangular": A basic triangular cycle without amplitude scaling.
     * "triangular2": A basic triangular cycle that scales initial amplitude by half each cycle.
@@ -1227,21 +1223,20 @@ class CyclicBS(BSScheduler):
     Args:
         dataloader (DataLoader): Wrapped dataloader.
         base_batch_size (int): Initial batch size which is the lower boundery in the cycle.
-        # TODO: Do we really need it? Don't we already have base batch size?
+        # Do we really need this parameter? Don't we already have base batch size?
         upper_batch_size_bound (int): Upper batch size boundary in the cycle. Functionally, it defines the cycle
             amplitude (upper_batch_size_bound - base_batch_size). The batch size at any cycle is the sum of
             base_batch_size and some scaling of the amplitude; therefore, upper_batch_size_bound may not actually be
             reached depending on scaling function.
-        # TODO: Do we really need it? Can't we just use max_batch_size?
+        # Do we really need this parameter? Can't we just use max_batch_size?
         step_size_up (int): Number of training iterations in the increasing half of a cycle. Default: 2000.
-        step_size_down (Union[int, None]): Number of training iterations in the decreasing half of a cycle. If step_size_down is
-            None, it is set to step_size_up. Default: None.
+        step_size_down (Union[int, None]): Number of training iterations in the decreasing half of a cycle. If
+            step_size_down is None, it is set to step_size_up. Default: None.
         mode (str): One of `triangular`, `triangular2`, `exp_range`. Values correspond to the policies detailed above.
             If scale_fn is not None, this argument is ignored. Default: 'triangular'.
         gamma (float): Constant in the 'exp_range' scaling function: gamma ** (cycle iterations). Default: 1.0.
-        scale_fn (function): Custom scaling policy defined by a single argument lambda function, where
-            0 <= scale_fn(x) <= 1 for all x >= 0. If specified, then 'mode' is ignored. Default: None.
-        # TODO: Update type.
+        scale_fn (Union[Callable[[int], float], None]): Custom scaling policy defined by a single argument lambda
+            function, where 0 <= scale_fn(x) <= 1 for all x >= 0. If specified, then 'mode' is ignored. Default: None.
         scale_mode (str): One of `cycle`, `iterations`. Defines whether scale_fn is evaluated on cycle number of cycle
             iterations (training iterations since the start of the cycle). When scale_fn is None, scale_mode is
             automatically set to 'iterations' if mode is 'exp_range' and 'cycle' otherwhise. Default: 'cycle'.
@@ -1268,21 +1263,17 @@ class CyclicBS(BSScheduler):
 
     def __init__(self, dataloader: DataLoader, base_batch_size: int, upper_batch_size_bound: int,
                  step_size_up: int = 2000, step_size_down: Union[int, None] = None, mode: str = 'triangular',
-                 gamma: float = 1.0, scale_fn: Union[None, None, None, None, None] = None, scale_mode: str = 'cycle',
+                 gamma: float = 1.0, scale_fn: Union[Callable[[int], float], None] = None, scale_mode: str = 'cycle',
                  batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
                  min_batch_size: int = 1, verbose: bool = False):
-        super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
         assert isinstance(base_batch_size, int) and base_batch_size > 0
-        assert isinstance(upper_batch_size_bound, int) and upper_batch_size_bound >= base_batch_size
-        # TODO: Check if >= or just >
+        assert isinstance(upper_batch_size_bound, int) and upper_batch_size_bound > base_batch_size
         assert isinstance(step_size_up, int) and step_size_up > 0
         assert step_size_down is None or (isinstance(step_size_down, int) and step_size_down > 0)
         assert isinstance(gamma, float) and gamma > 0.0
         assert scale_fn is None or callable(scale_fn)
         assert scale_mode in ('cycle', 'iterations')
-        # TODO: Check if step_size_up and
 
-        # TODO: Check if we really need them:
         self.base_batch_size: int = base_batch_size
         self.upper_batch_size_bound: int = upper_batch_size_bound
 
@@ -1290,17 +1281,17 @@ class CyclicBS(BSScheduler):
             raise ValueError("CyclicBS requires either a valid mode or passing a custom scale_fn.")
         self.mode: str = mode
 
-        step_size_up = float(step_size_up)
-        step_size_down = float(step_size_down) if step_size_down is not None else step_size_up
-        self.total_size: float = step_size_up + step_size_down
-        # TODO: Find why float
+        if step_size_down is None:
+            step_size_down = step_size_up
+        self.total_size: float = float(step_size_up + step_size_down)
         self.step_ratio: float = step_size_up / self.total_size
-
         self.gamma: float = gamma
 
-        self._scale_fn_custom: Union[None, Callable[[float], float]] = scale_fn  # TODO: type hinting
+        self._scale_fn_custom: Union[Callable[[int], float], None] = scale_fn
         self.scale_mode: str = scale_mode
         self._init_scale_fn()
+
+        super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
 
     def _init_scale_fn(self):
         if self._scale_fn_custom is not None:
@@ -1316,19 +1307,20 @@ class CyclicBS(BSScheduler):
             self.scale_mode = 'iterations'
 
     @staticmethod
-    def _triangular_scale_fn(x: float) -> float:
+    def _triangular_scale_fn(x: int) -> float:
         return 1.0
 
     @staticmethod
-    def _triangular2_scale_fn(x: float) -> float:
+    def _triangular2_scale_fn(x: int) -> float:
         return 1.0 / (2.0 ** (x - 1))
 
     @staticmethod
-    def _exp_range_scale_fn(gamma: float, x: float) -> float:
+    def _exp_range_scale_fn(gamma: float, x: int) -> float:
         return gamma ** x
 
     def get_new_bs(self) -> int:
-        """ Returns the next batch size as an :class:`int`.
+        """ Returns the next batch size as an :class:`int`. The value of the batch size cycles from base_batch_size to
+        upper_batch_size_bound and back, while being scaled at each iteration.
         """
         ratio = self.last_epoch / self.total_size
         cycle = math.floor(1 + ratio)
@@ -1353,4 +1345,16 @@ class CyclicBS(BSScheduler):
         states will also be saved.
         """
         state_dict = super().state_dict()
-        # TODO: Check if we need to pop something to make the object pickable.
+        state_dict.pop('scale_fn')
+        if self._scale_fn_custom is not None:
+            state_dict.pop('_scale_fn_custom')
+        return state_dict
+
+    def load_state_dict(self, state_dict: dict):
+        """ Loads the schedulers state.
+
+        Args:
+            state_dict (dict): scheduler state. Should be an object returned from a call to :meth:`state_dict`.
+        """
+        super().load_state_dict(state_dict)
+        self._init_scale_fn()
