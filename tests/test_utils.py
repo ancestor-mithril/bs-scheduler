@@ -1,10 +1,14 @@
 import math
+import os
+import tempfile
 import unittest
 
 import torch
 from torchvision import datasets
 from torchvision.transforms import ToTensor
 from torch.utils.data import DataLoader
+
+from bs_scheduler import BSScheduler
 
 
 def fashion_mnist():
@@ -82,3 +86,22 @@ class BSTest(unittest.TestCase):
         if drop_last:
             return [dataset_len // bs for bs in batch_sizes]
         return [int(math.ceil(dataset_len / bs)) for bs in batch_sizes]
+
+    @staticmethod
+    def reloading_scheduler(scheduler: BSScheduler):
+        state_dict = scheduler.state_dict()
+        scheduler.load_state_dict(state_dict)
+
+    @staticmethod
+    def torch_save_and_load(scheduler: BSScheduler):
+        state_dict = scheduler.state_dict()
+        # on os.name == 'nt' we can't open a named temporary file twice
+        tmp = tempfile.NamedTemporaryFile(delete=False)
+        try:
+            torch.save(state_dict, tmp.name)
+            state_dict = torch.load(tmp.name)
+        finally:
+            tmp.close()
+            os.unlink(tmp.name)
+
+        scheduler.load_state_dict(state_dict)

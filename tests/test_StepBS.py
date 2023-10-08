@@ -51,6 +51,18 @@ class TestStepBS(BSTest):
 
         self.assertEqual(batch_sizes, expected_batch_sizes)
 
+    def test_loading_and_unloading(self):
+        dataloader = create_dataloader(self.dataset)
+        step_size = 5
+        gamma = 3.0
+        scheduler = StepBS(dataloader, step_size=step_size, gamma=gamma, max_batch_size=5000, verbose=False)
+
+        self.reloading_scheduler(scheduler)
+        self.torch_save_and_load(scheduler)
+        scheduler.step()
+        self.assertEqual(scheduler.step_size, step_size)
+
+
 
 if __name__ == "__main__":
     from multiprocessing import freeze_support

@@ -34,6 +34,16 @@ class TestExponentialBS(BSTest):
 
         self.assertEqual(batch_sizes, expected_batch_sizes)
 
+    def test_loading_and_unloading(self):
+        dataloader = create_dataloader(self.dataset)
+        gamma = 2
+        scheduler = ExponentialBS(dataloader, gamma=gamma, max_batch_size=100, verbose=False)
+
+        self.reloading_scheduler(scheduler)
+        self.torch_save_and_load(scheduler)
+        scheduler.step()
+        self.assertEqual(scheduler.gamma, gamma)
+
 
 if __name__ == "__main__":
     from multiprocessing import freeze_support

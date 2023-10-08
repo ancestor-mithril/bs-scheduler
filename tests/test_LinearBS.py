@@ -15,7 +15,8 @@ class TestLinearBS(BSTest):
         #  without drop last and so on.
 
     @staticmethod
-    def compute_expected_batch_sizes(epochs, base_batch_size, start_factor, end_factor, milestone, min_batch_size, max_batch_size):
+    def compute_expected_batch_sizes(epochs, base_batch_size, start_factor, end_factor, milestone, min_batch_size,
+                                     max_batch_size):
         expected_batch_sizes = [base_batch_size]  # Base batch size is added as a boundary condition.
         factors = torch.linspace(start_factor, end_factor, milestone + 1)
         factors[1:] = factors[1:] / factors[:-1]
@@ -35,11 +36,16 @@ class TestLinearBS(BSTest):
         start_factor = 12.0
         end_factor = 3.0
         milestone = 5
-        scheduler = LinearBS(dataloader, verbose=False, start_factor=start_factor, end_factor=end_factor, milestone=milestone)
+        scheduler = LinearBS(dataloader, verbose=False, start_factor=start_factor, end_factor=end_factor,
+                             milestone=milestone)
         n_epochs = 10
 
         epoch_lengths = simulate_n_epochs(dataloader, scheduler, n_epochs)
-        expected_batch_sizes = self.compute_expected_batch_sizes(n_epochs, self.base_batch_size, start_factor=start_factor, end_factor=end_factor, milestone=milestone, min_batch_size=scheduler.min_batch_size, max_batch_size=scheduler.max_batch_size)
+        expected_batch_sizes = self.compute_expected_batch_sizes(n_epochs, self.base_batch_size,
+                                                                 start_factor=start_factor, end_factor=end_factor,
+                                                                 milestone=milestone,
+                                                                 min_batch_size=scheduler.min_batch_size,
+                                                                 max_batch_size=scheduler.max_batch_size)
         expected_lengths = self.compute_epoch_lengths(expected_batch_sizes, len(self.dataset), drop_last=False)
         self.assertEqual(epoch_lengths, expected_lengths)
 
@@ -49,13 +55,27 @@ class TestLinearBS(BSTest):
         start_factor = 6.0
         end_factor = 1.0
         milestone = 5
-        scheduler = LinearBS(dataloader, start_factor=start_factor, end_factor=end_factor, milestone=milestone, max_batch_size=100, verbose=False)
+        scheduler = LinearBS(dataloader, start_factor=start_factor, end_factor=end_factor, milestone=milestone,
+                             max_batch_size=100, verbose=False)
         n_epochs = 15
 
         batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
         expected_batch_sizes = [60, 50, 40, 30, 20] + [10] * 10
 
         self.assertEqual(batch_sizes, expected_batch_sizes)
+
+    def test_loading_and_unloading(self):
+        dataloader = create_dataloader(self.dataset)
+        start_factor = 6.0
+        end_factor = 1.0
+        milestone = 5
+        scheduler = LinearBS(dataloader, start_factor=start_factor, end_factor=end_factor, milestone=milestone,
+                             max_batch_size=100, verbose=False)
+
+        self.reloading_scheduler(scheduler)
+        self.torch_save_and_load(scheduler)
+        scheduler.step()
+        self.assertEqual(scheduler.milestone, milestone)
 
 
 if __name__ == "__main__":

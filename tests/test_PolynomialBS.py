@@ -38,6 +38,17 @@ class TestPolynomialBS(BSTest):
 
         self.assertEqual(batch_sizes, expected_batch_sizes)
 
+    def test_loading_and_unloading(self):
+        dataloader = create_dataloader(self.dataset)
+        total_iters = 10
+        power = 1.0
+        scheduler = PolynomialBS(dataloader, total_iters=total_iters, power=power, verbose=False)
+
+        self.reloading_scheduler(scheduler)
+        self.torch_save_and_load(scheduler)
+        scheduler.step()
+        self.assertEqual(scheduler.power, power)
+
 
 if __name__ == "__main__":
     from multiprocessing import freeze_support

@@ -48,6 +48,17 @@ class TestMultiplicativeBS(BSTest):
 
         self.assertEqual(batch_sizes, expected_batch_sizes)
 
+    def test_loading_and_unloading(self):
+        dataloader = create_dataloader(self.dataset)
+        fn = lambda epoch: 10 * epoch
+        scheduler = MultiplicativeBS(dataloader, fn)
+
+        self.reloading_scheduler(scheduler)
+        self.torch_save_and_load(scheduler)
+        scheduler.step()
+        # TODO: Test that function objects are saved and can work again
+        self.assertEqual(scheduler.bs_lambda(10), 100)
+
 
 if __name__ == "__main__":
     from multiprocessing import freeze_support

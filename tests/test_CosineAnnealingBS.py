@@ -39,6 +39,17 @@ class TestCosineAnnealingBS(BSTest):
 
         self.assertEqual(batch_sizes, expected_batch_sizes)
 
+    def test_loading_and_unloading(self):
+        dataloader = create_dataloader(self.dataset)
+        total_iters = 5
+        max_batch_size = 100
+        scheduler = CosineAnnealingBS(dataloader, total_iters=total_iters, max_batch_size=max_batch_size)
+
+        self.reloading_scheduler(scheduler)
+        self.torch_save_and_load(scheduler)
+        scheduler.step()
+        self.assertEqual(scheduler.max_batch_size, max_batch_size)
+
 
 if __name__ == "__main__":
     from multiprocessing import freeze_support
