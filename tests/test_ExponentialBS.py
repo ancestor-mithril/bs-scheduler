@@ -39,7 +39,7 @@ class TestExponentialBS(BSTest):
         gamma = 2
         scheduler = ExponentialBS(dataloader, gamma=gamma, max_batch_size=100, verbose=False)
 
-        self.loading_and_unloading(scheduler)
+        self.reloading_scheduler(scheduler)
         self.torch_save_and_load(scheduler)
         scheduler.step()
         self.assertEqual(scheduler.gamma, gamma)

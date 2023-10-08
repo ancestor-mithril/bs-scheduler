@@ -57,7 +57,7 @@ class TestStepBS(BSTest):
         gamma = 3.0
         scheduler = StepBS(dataloader, step_size=step_size, gamma=gamma, max_batch_size=5000, verbose=False)
 
-        self.loading_and_unloading(scheduler)
+        self.reloading_scheduler(scheduler)
         self.torch_save_and_load(scheduler)
         scheduler.step()
         self.assertEqual(scheduler.step_size, step_size)

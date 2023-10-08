@@ -88,7 +88,7 @@ class BSTest(unittest.TestCase):
         return [int(math.ceil(dataset_len / bs)) for bs in batch_sizes]
 
     @staticmethod
-    def loading_and_unloading(scheduler: BSScheduler):
+    def reloading_scheduler(scheduler: BSScheduler):
         state_dict = scheduler.state_dict()
         scheduler.load_state_dict(state_dict)
 

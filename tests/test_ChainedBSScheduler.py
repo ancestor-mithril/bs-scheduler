@@ -47,7 +47,7 @@ class TestChainedBSScheduler(BSTest):
         scheduler2 = ExponentialBS(dataloader, gamma=1.1)
         scheduler = ChainedBSScheduler([scheduler1, scheduler2])
 
-        self.loading_and_unloading(scheduler)
+        self.reloading_scheduler(scheduler)
         self.torch_save_and_load(scheduler)
         scheduler.step()
         self.assertEqual(scheduler.schedulers[0].factor, factor)

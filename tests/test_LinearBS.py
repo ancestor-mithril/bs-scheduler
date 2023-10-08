@@ -72,7 +72,7 @@ class TestLinearBS(BSTest):
         scheduler = LinearBS(dataloader, start_factor=start_factor, end_factor=end_factor, milestone=milestone,
                              max_batch_size=100, verbose=False)
 
-        self.loading_and_unloading(scheduler)
+        self.reloading_scheduler(scheduler)
         self.torch_save_and_load(scheduler)
         scheduler.step()
         self.assertEqual(scheduler.milestone, milestone)

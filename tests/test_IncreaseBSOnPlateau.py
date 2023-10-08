@@ -55,7 +55,7 @@ class TestIncreaseBSOnPlateau(BSTest):
         threshold_mode = 'rel'
         scheduler = IncreaseBSOnPlateau(dataloader, mode=mode, threshold_mode=threshold_mode)
 
-        self.loading_and_unloading(scheduler)
+        self.reloading_scheduler(scheduler)
         self.torch_save_and_load(scheduler)
         scheduler.step(metric=10)
         self.assertEqual(scheduler.mode, mode)

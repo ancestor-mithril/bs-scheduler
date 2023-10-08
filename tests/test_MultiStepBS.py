@@ -56,7 +56,7 @@ class TestMultiStepBS(BSTest):
         gamma = 3.0
         scheduler = MultiStepBS(dataloader, milestones=milestones, gamma=gamma, max_batch_size=5000, verbose=False)
 
-        self.loading_and_unloading(scheduler)
+        self.reloading_scheduler(scheduler)
         self.torch_save_and_load(scheduler)
         scheduler.step()
         self.assertEqual(scheduler.gamma, gamma)

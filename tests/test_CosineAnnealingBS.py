@@ -45,7 +45,7 @@ class TestCosineAnnealingBS(BSTest):
         max_batch_size = 100
         scheduler = CosineAnnealingBS(dataloader, total_iters=total_iters, max_batch_size=max_batch_size)
 
-        self.loading_and_unloading(scheduler)
+        self.reloading_scheduler(scheduler)
         self.torch_save_and_load(scheduler)
         scheduler.step()
         self.assertEqual(scheduler.max_batch_size, max_batch_size)

@@ -60,7 +60,7 @@ class TestLambdaBS(BSTest):
         fn = lambda epoch: 10 * epoch
         scheduler = LambdaBS(dataloader, fn)
 
-        self.loading_and_unloading(scheduler)
+        self.reloading_scheduler(scheduler)
         self.torch_save_and_load(scheduler)
         scheduler.step()
         # TODO: Test that function objects are saved and can work again

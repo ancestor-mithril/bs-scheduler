@@ -44,7 +44,7 @@ class TestPolynomialBS(BSTest):
         power = 1.0
         scheduler = PolynomialBS(dataloader, total_iters=total_iters, power=power, verbose=False)
 
-        self.loading_and_unloading(scheduler)
+        self.reloading_scheduler(scheduler)
         self.torch_save_and_load(scheduler)
         scheduler.step()
         self.assertEqual(scheduler.power, power)

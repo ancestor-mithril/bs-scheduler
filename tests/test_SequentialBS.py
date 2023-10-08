@@ -101,7 +101,7 @@ class TestSequentialBS(BSTest):
         scheduler2 = ExponentialBS(dataloader, gamma=2, verbose=False)
         scheduler = SequentialBS(dataloader, schedulers=[scheduler1, scheduler2], milestones=[5])
 
-        self.loading_and_unloading(scheduler)
+        self.reloading_scheduler(scheduler)
         self.torch_save_and_load(scheduler)
         scheduler.step()
         self.assertEqual(len(scheduler.schedulers), 2)

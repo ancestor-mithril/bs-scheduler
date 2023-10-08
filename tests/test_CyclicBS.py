@@ -108,7 +108,7 @@ class TestConstantBS(BSTest):
         dataloader = create_dataloader(self.dataset)
         upper_batch_size = 300
         scheduler = CyclicBS(dataloader, dataloader.batch_size, upper_batch_size, mode='triangular')
-        self.loading_and_unloading(scheduler)
+        self.reloading_scheduler(scheduler)
         self.torch_save_and_load(scheduler)
         scheduler.step()
         self.assertEqual(scheduler.scale_fn(rint(random.random() * 1000)), 1.0)
@@ -117,7 +117,7 @@ class TestConstantBS(BSTest):
         dataloader = create_dataloader(self.dataset)
         upper_batch_size = 300
         scheduler = CyclicBS(dataloader, dataloader.batch_size, upper_batch_size, mode='triangular2')
-        self.loading_and_unloading(scheduler)
+        self.reloading_scheduler(scheduler)
         self.torch_save_and_load(scheduler)
         scheduler.step()
         self.assertEqual(scheduler.scale_fn(2), 0.5)
@@ -129,7 +129,7 @@ class TestConstantBS(BSTest):
         upper_batch_size = 300
         gamma = 1.1
         scheduler = CyclicBS(dataloader, dataloader.batch_size, upper_batch_size, mode='exp_range', gamma=gamma)
-        self.loading_and_unloading(scheduler)
+        self.reloading_scheduler(scheduler)
         self.torch_save_and_load(scheduler)
         scheduler.step()
         self.assertEqual(scheduler.scale_fn(2), gamma ** 2.0)
@@ -140,7 +140,7 @@ class TestConstantBS(BSTest):
         dataloader = create_dataloader(self.dataset)
         upper_batch_size = 300
         scheduler = CyclicBS(dataloader, dataloader.batch_size, upper_batch_size, scale_fn=lambda x: 0.25)
-        self.loading_and_unloading(scheduler)
+        self.reloading_scheduler(scheduler)
         self.torch_save_and_load(scheduler)
         scheduler.step()
         self.assertEqual(scheduler.scale_fn(rint(random.random() * 1000)), 0.25)

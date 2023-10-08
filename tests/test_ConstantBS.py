@@ -44,7 +44,7 @@ class TestConstantBS(BSTest):
         milestone = 5
         scheduler = ConstantBS(dataloader, factor=factor, milestone=milestone, max_batch_size=100, verbose=True)
 
-        self.loading_and_unloading(scheduler)
+        self.reloading_scheduler(scheduler)
         self.torch_save_and_load(scheduler)
         scheduler.step()
         self.assertTrue(scheduler.verbose)
