@@ -987,11 +987,12 @@ class ChainedBSScheduler(BSScheduler):
         self.batch_size_manager: BatchSizeManager = batch_size_manger
         self.schedulers: Tuple[BSScheduler, ...] = tuple(schedulers)
         self._last_bs: int = self.schedulers[-1].last_bs
-        self.max_batch_size: int = self.schedulers[-1].max_batch_size
-        self.min_batch_size: int = self.schedulers[-1].min_batch_size
+        self.max_batch_size: int = max([x.max_batch_size for x in self.schedulers])
+        self.min_batch_size: int = min([x.min_batch_size for x in self.schedulers])
         self._finished: bool = False
+        # self.verbose: bool = False
+        # self.verbose: bool = 0
         self._init_get_new_bs()
-        # TODO: Validate that everything is initialized
 
     def step(self, **kwargs):
         """ Executes the step() function for all schedulers in order.
