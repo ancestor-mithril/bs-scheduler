@@ -140,11 +140,12 @@ class BSScheduler:
         assert max_batch_size is None or isinstance(max_batch_size, int)
         assert isinstance(min_batch_size, int)
         if max_batch_size is None:
-            self.max_batch_size: int = len(self.dataloader.dataset)
+            max_batch_size = len(self.dataloader.dataset)
         else:
             if max_batch_size < 0:
                 raise ValueError(f"Maximum batch size must be greater than 0, but is {max_batch_size}.")
-            self.max_batch_size: int = min(len(self.dataloader.dataset), max_batch_size)
+            max_batch_size = min(len(self.dataloader.dataset), max_batch_size)
+        self.max_batch_size: int = max_batch_size
 
         if min_batch_size < 0:
             raise ValueError(f"Minimum batch size must be greater than 0, but is {min_batch_size}.")
@@ -153,14 +154,14 @@ class BSScheduler:
                              f"({max_batch_size}), but is {min_batch_size}.")
         self.min_batch_size: int = min_batch_size
 
-        if batch_size_manager is not None:
-            self.batch_size_manager: BatchSizeManager = batch_size_manager
-        elif self.dataloader.batch_sampler is not None:
-            self.batch_size_manager: BatchSizeManager = DefaultBatchSizeManager(self.dataloader)
-        else:
-            # We require the client to implement a "change_batch_size" method and a "get_batch_size" method for their
-            # dataset.
-            self.batch_size_manager: BatchSizeManager = CustomBatchSizeManager(self.dataloader.dataset)
+        if batch_size_manager is None:
+            if self.dataloader.batch_sampler is not None:
+                batch_size_manager = DefaultBatchSizeManager(self.dataloader)
+            else:
+                # We require the client to implement a "change_batch_size" method and a "get_batch_size" method for
+                # their dataset.
+                batch_size_manager = CustomBatchSizeManager(self.dataloader.dataset)
+        self.batch_size_manager: BatchSizeManager = batch_size_manager
 
         self.last_epoch: int = -1
         if not hasattr(self.dataloader, '_base_batch_size'):
