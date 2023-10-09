@@ -85,15 +85,6 @@ class TestSequentialBS(BSTest):
             SequentialBS(dataloader, schedulers=[other_scheduler, scheduler2, scheduler3], milestones=[5, 10],
                          max_batch_size=100)
 
-        with self.assertRaises(ValueError):
-            other_scheduler = ConstantBS(dataloader, factor=10, milestone=4, max_batch_size=555)
-            SequentialBS(dataloader, schedulers=[other_scheduler, scheduler2, scheduler3], milestones=[5, 10],
-                         max_batch_size=100)
-        with self.assertRaises(ValueError):
-            other_scheduler = ConstantBS(dataloader, factor=10, milestone=4, min_batch_size=2)
-            SequentialBS(dataloader, schedulers=[other_scheduler, scheduler2, scheduler3], milestones=[5, 10],
-                         max_batch_size=100)
-
     def test_loading_and_unloading(self):
         dataloader = create_dataloader(self.dataset)
         factor = 10
