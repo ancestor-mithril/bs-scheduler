@@ -20,7 +20,7 @@ class TestSequentialBS(BSTest):
         dataloader = create_dataloader(self.dataset, batch_size=base_batch_size)
         scheduler1 = ConstantBS(dataloader, factor=10, milestone=4)
         scheduler2 = ExponentialBS(dataloader, gamma=1.1)
-        scheduler = SequentialBS(dataloader, schedulers=[scheduler1, scheduler2], milestones=[5])
+        scheduler = SequentialBS(schedulers=[scheduler1, scheduler2], milestones=[5])
         n_epochs = 10
 
         epoch_lengths = simulate_n_epochs(dataloader, scheduler, n_epochs)
@@ -33,7 +33,7 @@ class TestSequentialBS(BSTest):
         dataloader = create_dataloader(self.dataset, batch_size=base_batch_size)
         scheduler1 = ConstantBS(dataloader, factor=10, milestone=4, max_batch_size=100)
         scheduler2 = ExponentialBS(dataloader, gamma=2, max_batch_size=100, verbose=False)
-        scheduler = SequentialBS(dataloader, schedulers=[scheduler1, scheduler2], milestones=[5], max_batch_size=100)
+        scheduler = SequentialBS(schedulers=[scheduler1, scheduler2], milestones=[5])
         n_epochs = 10
 
         batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
@@ -48,29 +48,25 @@ class TestSequentialBS(BSTest):
         scheduler3 = LinearBS(dataloader, max_batch_size=100, verbose=False)
         if len(os.getenv('PYTHONOPTIMIZE', '')) == 0:
             with self.assertRaises(AssertionError):
-                SequentialBS(dataloader, schedulers=scheduler1, milestones=[5], max_batch_size=100)
+                SequentialBS(schedulers=scheduler1, milestones=[5])
             with self.assertRaises(AssertionError):
-                SequentialBS(dataloader, schedulers=[scheduler1], milestones=[5], max_batch_size=100)
+                SequentialBS(schedulers=[scheduler1], milestones=[5])
             with self.assertRaises(AssertionError):
-                SequentialBS(dataloader, schedulers=[scheduler1, scheduler2], milestones=5, max_batch_size=100)
+                SequentialBS(schedulers=[scheduler1, scheduler2], milestones=5)
             with self.assertRaises(AssertionError):
-                SequentialBS(dataloader, schedulers=[scheduler1, scheduler2], milestones=[], max_batch_size=100)
+                SequentialBS(schedulers=[scheduler1, scheduler2], milestones=[])
             with self.assertRaises(AssertionError):
-                SequentialBS(dataloader, schedulers=[scheduler1, scheduler2], milestones=[0], max_batch_size=100)
+                SequentialBS(schedulers=[scheduler1, scheduler2], milestones=[0])
             with self.assertRaises(AssertionError):
-                SequentialBS(dataloader, schedulers=[scheduler1, scheduler2, scheduler3], milestones=[10, 5],
-                             max_batch_size=100)
+                SequentialBS(schedulers=[scheduler1, scheduler2, scheduler3], milestones=[10, 5])
             with self.assertRaises(ValueError):
-                SequentialBS(dataloader, schedulers=[scheduler1, scheduler2, scheduler3], milestones=[10],
-                             max_batch_size=100)
+                SequentialBS(schedulers=[scheduler1, scheduler2, scheduler3], milestones=[10])
 
-        SequentialBS(dataloader, schedulers=[scheduler1, scheduler2, scheduler3], milestones=[5, 10],
-                     max_batch_size=100)
+        SequentialBS(schedulers=[scheduler1, scheduler2, scheduler3], milestones=[5, 10])
         with self.assertRaises(ValueError):
             other_dataloader = create_dataloader(self.dataset, batch_size=self.base_batch_size)
             other_scheduler = ConstantBS(other_dataloader, factor=10, milestone=4, max_batch_size=100)
-            SequentialBS(dataloader, schedulers=[other_scheduler, scheduler2, scheduler3], milestones=[5, 10],
-                         max_batch_size=100)
+            SequentialBS(schedulers=[other_scheduler, scheduler2, scheduler3], milestones=[5, 10])
 
         with self.assertRaises(ValueError):
             class OtherBatchManager(BatchSizeManager):
@@ -82,24 +78,14 @@ class TestSequentialBS(BSTest):
 
             other_scheduler = ConstantBS(dataloader, factor=10, milestone=4, max_batch_size=100,
                                          batch_size_manager=OtherBatchManager())
-            SequentialBS(dataloader, schedulers=[other_scheduler, scheduler2, scheduler3], milestones=[5, 10],
-                         max_batch_size=100)
-
-        with self.assertRaises(ValueError):
-            other_scheduler = ConstantBS(dataloader, factor=10, milestone=4, max_batch_size=555)
-            SequentialBS(dataloader, schedulers=[other_scheduler, scheduler2, scheduler3], milestones=[5, 10],
-                         max_batch_size=100)
-        with self.assertRaises(ValueError):
-            other_scheduler = ConstantBS(dataloader, factor=10, milestone=4, min_batch_size=2)
-            SequentialBS(dataloader, schedulers=[other_scheduler, scheduler2, scheduler3], milestones=[5, 10],
-                         max_batch_size=100)
+            SequentialBS(schedulers=[other_scheduler, scheduler2, scheduler3], milestones=[5, 10])
 
     def test_loading_and_unloading(self):
         dataloader = create_dataloader(self.dataset)
         factor = 10
         scheduler1 = ConstantBS(dataloader, factor=factor, milestone=4)
         scheduler2 = ExponentialBS(dataloader, gamma=2, verbose=False)
-        scheduler = SequentialBS(dataloader, schedulers=[scheduler1, scheduler2], milestones=[5])
+        scheduler = SequentialBS(schedulers=[scheduler1, scheduler2], milestones=[5])
 
         self.reloading_scheduler(scheduler)
         self.torch_save_and_load(scheduler)

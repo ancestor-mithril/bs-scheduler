@@ -16,17 +16,17 @@ class TestConstantBS(BSTest):
     def test_dataloader_batch_size_triangular(self):
         base_batch_size = 10
         dataloader = create_dataloader(self.dataset, batch_size=base_batch_size)
-        upper_batch_size_bound = 100
+        max_batch_size = 100
         step_size_up = 10
-        scheduler = CyclicBS(dataloader, base_batch_size=base_batch_size, upper_batch_size_bound=upper_batch_size_bound,
+        scheduler = CyclicBS(dataloader, base_batch_size=base_batch_size, max_batch_size=max_batch_size,
                              step_size_up=step_size_up, mode='triangular')
         n_epochs = 4 * step_size_up
 
         batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
 
-        step = rint((upper_batch_size_bound - base_batch_size) / step_size_up)
-        increasing_range = list(range(base_batch_size, upper_batch_size_bound, step))
-        decreasing_range = list(range(upper_batch_size_bound, base_batch_size, -step))
+        step = rint((max_batch_size - base_batch_size) / step_size_up)
+        increasing_range = list(range(base_batch_size, max_batch_size, step))
+        decreasing_range = list(range(max_batch_size, base_batch_size, -step))
         expected_batch_sizes = (increasing_range + decreasing_range) * 2
 
         self.assertEqual(batch_sizes, expected_batch_sizes)
@@ -34,17 +34,17 @@ class TestConstantBS(BSTest):
     def test_dataloader_batch_size_triangular2(self):
         base_batch_size = 10
         dataloader = create_dataloader(self.dataset, batch_size=base_batch_size)
-        upper_batch_size_bound = 100
+        max_batch_size = 100
         step_size_up = 10
-        scheduler = CyclicBS(dataloader, base_batch_size=base_batch_size, upper_batch_size_bound=upper_batch_size_bound,
+        scheduler = CyclicBS(dataloader, base_batch_size=base_batch_size, max_batch_size=max_batch_size,
                              step_size_up=step_size_up, mode='triangular2')
         n_epochs = 4 * step_size_up
 
         batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
 
-        step = rint((upper_batch_size_bound - base_batch_size) / step_size_up)
-        increasing_range = list(range(base_batch_size, upper_batch_size_bound, step))
-        decreasing_range = list(range(upper_batch_size_bound, base_batch_size, -step))
+        step = rint((max_batch_size - base_batch_size) / step_size_up)
+        increasing_range = list(range(base_batch_size, max_batch_size, step))
+        decreasing_range = list(range(max_batch_size, base_batch_size, -step))
         increasing_range_2 = [base_batch_size]
         for _ in range(step_size_up - 1):
             increasing_range_2.append(increasing_range_2[-1] + step / 2.0)
@@ -65,10 +65,10 @@ class TestConstantBS(BSTest):
     def test_dataloader_batch_size_exp_range(self):
         base_batch_size = 10
         dataloader = create_dataloader(self.dataset, batch_size=base_batch_size)
-        upper_batch_size_bound = 100
+        max_batch_size = 100
         step_size_up = 10
         gamma = 0.9
-        scheduler = CyclicBS(dataloader, base_batch_size=base_batch_size, upper_batch_size_bound=upper_batch_size_bound,
+        scheduler = CyclicBS(dataloader, base_batch_size=base_batch_size, max_batch_size=max_batch_size,
                              step_size_up=step_size_up, mode='exp_range', gamma=gamma)
         n_epochs = 4 * step_size_up
 
@@ -88,7 +88,7 @@ class TestConstantBS(BSTest):
 
             return increasing_range, decreasing_range, count
 
-        step = rint((upper_batch_size_bound - base_batch_size) / step_size_up)
+        step = rint((max_batch_size - base_batch_size) / step_size_up)
         count = 0
 
         increasing_range, decreasing_range, count = calculate_increasing_and_decreasing_range(

@@ -1,19 +1,18 @@
 # Inspired from https://pytorch.org/docs/stable/_modules/torch/optim/lr_scheduler.html.
 import inspect
 import math
-from functools import partial
-
-import torch
 import types
 from bisect import bisect_right
 from collections import Counter
+from functools import partial
 from typing import Callable, Union, Sequence, Tuple
 
+import torch
 from torch.utils.data import DataLoader, Dataset
 
 __all__ = ['LambdaBS', 'MultiplicativeBS', 'StepBS', 'MultiStepBS', 'ConstantBS', 'LinearBS', 'ExponentialBS',
            'SequentialBS', 'PolynomialBS', 'CosineAnnealingBS', 'ChainedBSScheduler', 'IncreaseBSOnPlateau', 'CyclicBS',
-           'BSScheduler', 'BatchSizeManager']
+           'CosineAnnealingBSWithWarmRestarts', 'OneCycleBS', 'BSScheduler', 'BatchSizeManager']
 
 
 def rint(x: float) -> int:
@@ -141,11 +140,12 @@ class BSScheduler:
         assert max_batch_size is None or isinstance(max_batch_size, int)
         assert isinstance(min_batch_size, int)
         if max_batch_size is None:
-            self.max_batch_size: int = len(self.dataloader.dataset)
+            max_batch_size = len(self.dataloader.dataset)
         else:
             if max_batch_size < 0:
                 raise ValueError(f"Maximum batch size must be greater than 0, but is {max_batch_size}.")
-            self.max_batch_size: int = min(len(self.dataloader.dataset), max_batch_size)
+            max_batch_size = min(len(self.dataloader.dataset), max_batch_size)
+        self.max_batch_size: int = max_batch_size
 
         if min_batch_size < 0:
             raise ValueError(f"Minimum batch size must be greater than 0, but is {min_batch_size}.")
@@ -154,14 +154,14 @@ class BSScheduler:
                              f"({max_batch_size}), but is {min_batch_size}.")
         self.min_batch_size: int = min_batch_size
 
-        if batch_size_manager is not None:
-            self.batch_size_manager: BatchSizeManager = batch_size_manager
-        elif self.dataloader.batch_sampler is not None:
-            self.batch_size_manager: BatchSizeManager = DefaultBatchSizeManager(self.dataloader)
-        else:
-            # We require the client to implement a "change_batch_size" method and a "get_batch_size" method for their
-            # dataset.
-            self.batch_size_manager: BatchSizeManager = CustomBatchSizeManager(self.dataloader.dataset)
+        if batch_size_manager is None:
+            if self.dataloader.batch_sampler is not None:
+                batch_size_manager = DefaultBatchSizeManager(self.dataloader)
+            else:
+                # We require the client to implement a "change_batch_size" method and a "get_batch_size" method for
+                # their dataset.
+                batch_size_manager = CustomBatchSizeManager(self.dataloader.dataset)
+        self.batch_size_manager: BatchSizeManager = batch_size_manager
 
         self.last_epoch: int = -1
         if not hasattr(self.dataloader, '_base_batch_size'):
@@ -682,18 +682,10 @@ class SequentialBS(BSScheduler):
     given the milestone points that reflect which scheduler is supposed to be called at a fiven epoch
 
     Args:
-        dataloader (DataLoader): Wrapped dataloader.
         schedulers (Sequence[BSScheduler]): Sequence of batch size schedulers. We expect the first scheduler to have
             been initialized first.
         milestones (Sequence[int]): Sequence of integers that reflects the milestone points. Must be sorted in a
             non-descending order.
-        batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
-            which provides a getter and setter for the batch size. Default: None.
-        max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
-            in the memory. If None or greater than the lenght of the dataset wrapped by the dataloader, max_batch_size
-            is set to `len(self.dataloader.dataset)`. Default: None.
-        min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
-        verbose (bool): Does nothing.
 
     Example:
         >>> dataloader = ...
@@ -714,11 +706,7 @@ class SequentialBS(BSScheduler):
         >>>     scheduler.step()
     """
 
-    def __init__(self, dataloader: DataLoader, schedulers: Sequence[BSScheduler], milestones=Sequence[int],
-                 batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
-                 min_batch_size: int = 1, verbose: bool = False):
-        # Doing the initialization first, all checks later. In the initial step called in constructor we do nothing.
-        super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
+    def __init__(self, schedulers: Sequence[BSScheduler], milestones=Sequence[int]):
 
         assert isinstance(schedulers, (tuple, list)) and len(schedulers) >= 2 and all(
             [isinstance(x, BSScheduler) for x in schedulers])
@@ -731,25 +719,25 @@ class SequentialBS(BSScheduler):
             raise ValueError(f"SequentialBS expects the number of schedulers provided to be one more than the number "
                              f"of milestone points, but got {len(schedulers)} and the number of milestones is "
                              f"{len(milestones)}")
+
+        super().__init__(schedulers[0].dataloader, schedulers[0].batch_size_manager, schedulers[0].max_batch_size,
+                         schedulers[0].min_batch_size, verbose=False)
+
         for i in range(len(schedulers)):
             if schedulers[i].dataloader != self.dataloader:
                 raise ValueError(f"SequentialBS expects all schedulers to belong to the same dataloader, but got "
-                                 f"scheduler at index {i} to be different than the dataloader passed in.")
+                                 f"scheduler at index {i} to be different than the scheduler at index 0.")
             if not isinstance(schedulers[i].batch_size_manager, type(self.batch_size_manager)):
                 raise ValueError(f"SequentialBS expects all schedulers to have the same batch size manager, but got "
                                  f"scheduler at index {i} to have a different batch size manager. Expected type of "
                                  f"batch size manager: {type(self.batch_size_manager).__name__}, got: "
                                  f"{type(schedulers[i].batch_size_manager).__name__}.")
-            # TODO: Do we really need to raise an error if the maximum batch size is different for each scheduler?
-            # Maybe not, maybe we should just use max() and min().
-            if schedulers[i].max_batch_size != self.max_batch_size:
-                raise ValueError(f"SequentialBS expects all schedulers to have the same maximum batch size, but got "
-                                 f"scheduler at index {i} to have a different maximum batch size. Expected "
-                                 f"{self.max_batch_size}, got {schedulers[i].max_batch_size}.")
-            if schedulers[i].min_batch_size != self.min_batch_size:
-                raise ValueError(f"SequentialBS expects all schedulers to have the same minimum batch size, but got "
-                                 f"scheduler at index {i} to have a different minimum batch size. Expected "
-                                 f"{self.min_batch_size}, got {schedulers[i].min_batch_size}.")
+
+            if schedulers[i].max_batch_size > self.max_batch_size:
+                self.max_batch_size = schedulers[i].max_batch_size
+            if schedulers[i].min_batch_size < self.min_batch_size:
+                self.min_batch_size = schedulers[i].min_batch_size
+
             # Undoing the steps done by the schedulers.
             schedulers[i]._last_bs = self.dataloader._base_batch_size
             schedulers[i].last_epoch -= 1
@@ -883,6 +871,8 @@ class CosineAnnealingBS(BSScheduler):
     Args:
         dataloader (DataLoader): Wrapped dataloader.
         total_iters (int): The number of steps that the scheduler increases the batch size.
+        base_batch_size (Union[int, None]): The base batch size. If None, the base batch size will be retrieved from
+            the dataloader. Default: None.
         batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
             which provides a getter and setter for the batch size. Default: None.
         max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
@@ -906,20 +896,23 @@ class CosineAnnealingBS(BSScheduler):
         >>> # bs = 67 if epoch % 10 == 7
         >>> # bs = 37 if epoch % 10 == 8
         >>> # bs = 13 if epoch % 10 == 9
-        >>> scheduler = CosineAnnealingBS(dataloader, total_iters=5, power=1.0)
+        >>> scheduler = CosineAnnealingBS(dataloader, total_iters=5)
         >>> for epoch in range(100):
         >>>     train(...)
         >>>     validate(...)
         >>>     scheduler.step()
     """
 
-    def __init__(self, dataloader: DataLoader, total_iters: int,
+    def __init__(self, dataloader: DataLoader, total_iters: int, base_batch_size: Union[int, None] = None,
                  batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
                  min_batch_size: int = 1, verbose: bool = False):
         assert isinstance(total_iters, int) and total_iters > 1
+        assert base_batch_size is None or (isinstance(base_batch_size, int) and base_batch_size >= min_batch_size)
 
         self.total_iters: int = total_iters
         super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
+        self.base_batch_size: int = self.dataloader._base_batch_size if base_batch_size is None else base_batch_size
+        assert self.max_batch_size > self.base_batch_size
 
     def get_new_bs(self) -> int:
         """ Returns the next batch size as an :class:`int`. Increases the batch size from base batch size to maximum
@@ -927,23 +920,21 @@ class CosineAnnealingBS(BSScheduler):
         torch.optim.lr_scheduler.CosineAnnealingLR.get_lr() and instead of `eta_min` we use `self.max_batch_size` and
         we clip the values to be within bounds.
         """
-        base_batch_size = self.dataloader._base_batch_size
-
         if self.last_epoch == 0:
             return self.batch_size
 
-        if self.last_epoch == 1 and base_batch_size == self.batch_size:
-            new_bs = self.max_batch_size + (base_batch_size - self.max_batch_size) * (
+        if self.last_epoch == 1 and self.base_batch_size == self.batch_size:
+            new_bs = self.max_batch_size + (self.base_batch_size - self.max_batch_size) * (
                     1 + math.cos(self.last_epoch * math.pi / self.total_iters)) / 2
         elif (self.last_epoch - 1 - self.total_iters) % (2 * self.total_iters) == 0:
-            new_bs = self.batch_size + (base_batch_size - self.max_batch_size) * (
+            new_bs = self.batch_size + (self.base_batch_size - self.max_batch_size) * (
                     1 - math.cos(math.pi / self.total_iters)) / 2
         else:
             new_bs = (1 + math.cos(math.pi * self.last_epoch / self.total_iters)) / (
                     1 + math.cos(math.pi * (self.last_epoch - 1) / self.total_iters)) * (
                              self.batch_size - self.max_batch_size) + self.max_batch_size
 
-        return clip(rint(new_bs), min=base_batch_size, max=self.max_batch_size)
+        return clip(rint(new_bs), min=self.base_batch_size, max=self.max_batch_size)
 
 
 class ChainedBSScheduler(BSScheduler):
@@ -996,9 +987,12 @@ class ChainedBSScheduler(BSScheduler):
         self.batch_size_manager: BatchSizeManager = batch_size_manger
         self.schedulers: Tuple[BSScheduler, ...] = tuple(schedulers)
         self._last_bs: int = self.schedulers[-1].last_bs
-        self.max_batch_size: int = self.schedulers[-1].max_batch_size
-        self.min_batch_size: int = self.schedulers[-1].min_batch_size
+        self.max_batch_size: int = max([x.max_batch_size for x in self.schedulers])
+        self.min_batch_size: int = min([x.min_batch_size for x in self.schedulers])
         self._finished: bool = False
+        # self.verbose: bool = False
+        # self.verbose: bool = 0
+        self._init_get_new_bs()
 
     def step(self, **kwargs):
         """ Executes the step() function for all schedulers in order.
@@ -1222,13 +1216,8 @@ class CyclicBS(BSScheduler):
 
     Args:
         dataloader (DataLoader): Wrapped dataloader.
-        base_batch_size (int): Initial batch size which is the lower boundery in the cycle.
-        # Do we really need this parameter? Don't we already have base batch size?
-        upper_batch_size_bound (int): Upper batch size boundary in the cycle. Functionally, it defines the cycle
-            amplitude (upper_batch_size_bound - base_batch_size). The batch size at any cycle is the sum of
-            base_batch_size and some scaling of the amplitude; therefore, upper_batch_size_bound may not actually be
-            reached depending on scaling function.
-        # Do we really need this parameter? Can't we just use max_batch_size?
+        base_batch_size (Union[int, None]): Initial batch size which is the lower boundery in the cycle. If None, the
+            base batch size will be retrieved from the dataloader. Default: None.
         step_size_up (int): Number of training iterations in the increasing half of a cycle. Default: 2000.
         step_size_down (Union[int, None]): Number of training iterations in the decreasing half of a cycle. If
             step_size_down is None, it is set to step_size_up. Default: None.
@@ -1242,9 +1231,11 @@ class CyclicBS(BSScheduler):
             automatically set to 'iterations' if mode is 'exp_range' and 'cycle' otherwhise. Default: 'cycle'.
         batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
             which provides a getter and setter for the batch size. Default: None.
-        max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
-            in the memory. If None or greater than the lenght of the dataset wrapped by the dataloader, max_batch_size
-            is set to `len(self.dataloader.dataset)`. Default: None.
+        max_batch_size (Union[int, None]): Upper batch size boundary in the cycle. Functionally, it defines the cycle
+            amplitude (upper_batch_size_bound - base_batch_size). The batch size at any cycle is the sum of
+            base_batch_size and some scaling of the amplitude; therefore, upper_batch_size_bound may not actually be
+            reached depending on scaling function. If None or greater than the lenght of the dataset wrapped by the
+            dataloader, max_batch_size is set to `len(self.dataloader.dataset)`. Default: None.
         min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
         verbose (bool): If ``True``, prints a message to stdout for each update. Default: ``False``.
 
@@ -1261,21 +1252,17 @@ class CyclicBS(BSScheduler):
     .. _bckenstler/CLR: https://github.com/bckenstler/CLR
     """
 
-    def __init__(self, dataloader: DataLoader, base_batch_size: int, upper_batch_size_bound: int,
+    def __init__(self, dataloader: DataLoader, base_batch_size: Union[int, None] = None,
                  step_size_up: int = 2000, step_size_down: Union[int, None] = None, mode: str = 'triangular',
                  gamma: float = 1.0, scale_fn: Union[Callable[[int], float], None] = None, scale_mode: str = 'cycle',
                  batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
                  min_batch_size: int = 1, verbose: bool = False):
-        assert isinstance(base_batch_size, int) and base_batch_size > 0
-        assert isinstance(upper_batch_size_bound, int) and upper_batch_size_bound > base_batch_size
+        assert base_batch_size is None or (isinstance(base_batch_size, int) and base_batch_size >= min_batch_size)
         assert isinstance(step_size_up, int) and step_size_up > 0
         assert step_size_down is None or (isinstance(step_size_down, int) and step_size_down > 0)
         assert isinstance(gamma, float) and gamma > 0.0
         assert scale_fn is None or callable(scale_fn)
         assert scale_mode in ('cycle', 'iterations')
-
-        self.base_batch_size: int = base_batch_size
-        self.upper_batch_size_bound: int = upper_batch_size_bound
 
         if mode not in ('triangular', 'triangular2', 'exp_range') and scale_fn is None:
             raise ValueError("CyclicBS requires either a valid mode or passing a custom scale_fn.")
@@ -1292,6 +1279,8 @@ class CyclicBS(BSScheduler):
         self._init_scale_fn()
 
         super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
+        self.base_batch_size: int = self.dataloader._base_batch_size if base_batch_size is None else base_batch_size
+        assert self.max_batch_size > self.base_batch_size
 
     def _init_scale_fn(self):
         if self._scale_fn_custom is not None:
@@ -1322,6 +1311,9 @@ class CyclicBS(BSScheduler):
         """ Returns the next batch size as an :class:`int`. The value of the batch size cycles from base_batch_size to
         upper_batch_size_bound and back, while being scaled at each iteration.
         """
+        if self.last_epoch == 0:  # Don't do anything at initialization.
+            return self.batch_size
+
         ratio = self.last_epoch / self.total_size
         cycle = math.floor(1 + ratio)
         x = 1.0 + ratio - cycle
@@ -1330,7 +1322,7 @@ class CyclicBS(BSScheduler):
         else:
             scale_factor = (x - 1) / (self.step_ratio - 1)
 
-        base_height = (self.upper_batch_size_bound - self.base_batch_size) * scale_factor
+        base_height = (self.max_batch_size - self.base_batch_size) * scale_factor
         if self.scale_mode == 'cycle':
             base_height *= self.scale_fn(cycle)
         else:
@@ -1358,3 +1350,182 @@ class CyclicBS(BSScheduler):
         """
         super().load_state_dict(state_dict)
         self._init_scale_fn()
+
+
+class CosineAnnealingBSWithWarmRestarts(BSScheduler):
+    """ Similar to torch.optim.lr_scheduler.CosineAnnealingWarmRestarts which implements `SGDR: Stochastic Gradient
+    Descent with Warm Restarts`_. Unlike torch.optim.lr_scheduler.CosineAnnealingWarmRestarts, which decreases the
+    learning rate for :math:`t_{i}` iterations and then restarts, we increase the batch size from base_batch_size to
+    max_batch_size in :math:`t_{i} + 1` iterations, then the batch size is restarted.
+
+    This scheduler can be used after every batch.
+
+    Args:
+        dataloader (DataLoader): Wrapped dataloader.
+        t_0 (int): The number of iterations for the first restart is t_0 + 1.
+        base_batch_size (Union[int, None]): The base batch size. If None, the base batch size will be retrieved from
+            the dataloader. Default: None.
+        factor (int): The factor with which :math:`t_{i}` is increased after a restart. Default: 1.
+        batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
+            which provides a getter and setter for the batch size. Default: None.
+        max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
+            in the memory. If None or greater than the lenght of the dataset wrapped by the dataloader, max_batch_size
+            is set to `len(self.dataloader.dataset)`. Default: None.
+        min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
+        verbose (bool): If ``True``, prints a message to stdout for each update. Default: ``False``.
+
+    .. _SGDR\\: Stochastic Gradient Descent with Warm Restarts: https://arxiv.org/abs/1608.03983
+
+    Example:
+        >>> dataloader = ...
+        >>> # Assuming the base batch size is 10.
+        >>> # bs = 10 if last_epoch % 6 == 0
+        >>> # bs = 19 if last_epoch % 6 == 1
+        >>> # bs = 41 if last_epoch % 6 == 2
+        >>> # bs = 69 if last_epoch % 6 == 3
+        >>> # bs = 91 if last_epoch % 6 == 4
+        >>> # bs = 100 if last_epoch % 6 == 5
+        >>> scheduler = CosineAnnealingBSWithWarmRestarts(dataloader, 10)
+        >>> for epoch in range(100):
+        >>>     for batch in dataloader:
+        >>>         train_batch(...)
+        >>>         scheduler.step()
+    """
+
+    def __init__(self, dataloader: DataLoader, t_0: int, base_batch_size: Union[int, None] = None, factor: int = 1,
+                 batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
+                 min_batch_size: int = 1, verbose: bool = False):
+        assert isinstance(t_0, int) and t_0 > 0
+        assert isinstance(factor, int) and factor > 0
+        assert base_batch_size is None or (isinstance(base_batch_size, int) and base_batch_size >= min_batch_size)
+
+        self.t_0: int = t_0
+        self.t_i: int = t_0
+        self.t_cur: int = 0
+        self.factor: int = factor
+        super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
+        self.base_batch_size: int = self.dataloader._base_batch_size if base_batch_size is None else base_batch_size
+        assert self.max_batch_size > self.base_batch_size
+
+    def get_new_bs(self) -> int:
+        """ Returns the next batch size as an :class:`int`. Increases the batch size from base batch size to maximum
+        batch and restarts. The implementation is similar to
+        torch.optim.lr_scheduler.CosineAnnealingWarmRestarts, but instead of `eta_min` we use max_batch_size, and we
+        increase the batch size instead of decreasing the learning rate. We clip the values to always remain within
+        bound.
+        """
+        if self.last_epoch == 0:  # Don't do anything at initialization.
+            return self.batch_size
+
+        self.t_cur += 1
+        if self.t_cur > self.t_i:  # > so that we reach max_batch_size
+            self.t_cur -= self.t_i + 1  # + 1 so that we go back to base_batch_size
+            self.t_i *= self.factor
+
+        new_bs = self.base_batch_size + (self.max_batch_size - self.base_batch_size) * (
+                1 + math.cos(math.pi + math.pi * self.t_cur / self.t_i)) / 2
+        return clip(rint(new_bs), min=self.base_batch_size, max=self.max_batch_size)
+
+
+class OneCycleBS(BSScheduler):
+    """ Similar to torch.optim.lr_scheduler.OneCycleLR. Sets the batch size according to the one cycle batch size
+    policy, inspired from the 1cycle learning rate policy. The one cycle batch size policy decreases the batch size
+    from the base_batch_size to some minimum batch size and that it increases it to some maximum batch size. bigger
+    than the base_batch_size.
+    This policy is inspired from the policy described in the paper `Super-Convergence: Very Fast Training of Neural
+    Networks Using Large Learning Rates`_. It only uses two phases (base -> min, min -> max) instead of the three
+    phases described in the paper (base -> min, min -> base, base -> max).
+
+    The once cycle batch size policy changes the batch size after every batch. The step() function should be called
+    after a batch has been used for training. But it may also be called after every epoch and the total_steps should be
+    adjusted accordingly.
+
+    This scheduler is not chainable.
+
+    Args:
+        dataloader (DataLoader): Wrapped dataloader.
+        total_steps (int): The total number of steps in the cycle.
+        decay_percentage (float): The fraction of the cycle spend decreasing the batch size. 1 - decay_percentage will
+            be spent increasing the batch size. Default: 0.3.
+        base_batch_size (Union[int, None]): The base batch size. If None, the base batch size will be retrieved from
+            the dataloader. Default: None.
+        strategy (str): One of `cos`, `linear`. Specifies the strategy used for annealing the batch size, 'cos' for
+            cosine annealing, 'linear' for linear annealing. Default: 'cos'.
+        batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
+            which provides a getter and setter for the batch size. Default: None.
+        max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
+            in the memory. If None or greater than the lenght of the dataset wrapped by the dataloader, max_batch_size
+            is set to `len(self.dataloader.dataset)`. Default: None.
+        min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
+        verbose (bool): If ``True``, prints a message to stdout for each update. Default: ``False``.
+
+    Example:
+            >>> dataloader = ...
+            >>> scheduler = OneCycleBS(dataloader, total_steps=1000)
+            >>> for epoch in range(100):
+            >>>     for batch in dataloader:
+            >>>         train_batch(...)
+            >>>         scheduler.step()
+
+    .. _Super-Convergence\\: Very Fast Training of Neural Networks Using Large Learning Rates:
+        https://arxiv.org/abs/1708.07120
+    """
+
+    def __init__(self, dataloader: DataLoader, total_steps: int, decay_percentage: float = 0.3,
+                 base_batch_size: Union[int, None] = None, strategy: str = 'cos',
+                 batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
+                 min_batch_size: int = 1, verbose: bool = False):
+        assert isinstance(total_steps, int)
+        assert isinstance(decay_percentage, float) and 0 < decay_percentage < 1
+        assert rint(total_steps * decay_percentage) > 0 and total_steps - rint(total_steps * decay_percentage) > 0
+        assert base_batch_size is None or (isinstance(base_batch_size, int) and base_batch_size > min_batch_size)
+        assert strategy in ('cos', 'linear')
+
+        self.end_step_1: int = rint(total_steps * decay_percentage)
+        self.end_step_2: int = total_steps - self.end_step_1
+
+        self.strategy: str = strategy
+        if strategy == 'cos':
+            self.anneal_fn = self._annealing_cos
+        else:
+            self.anneal_fn = self._annealing_linear
+
+        super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
+        self.base_batch_size: int = self.dataloader._base_batch_size if base_batch_size is None else base_batch_size
+        assert self.max_batch_size > self.base_batch_size
+
+    @staticmethod
+    def _annealing_cos(start, end, percentage):
+        """ Cosine annealing from start to end as percentage goes from 0.0 to 1.0.
+        """
+        return end + (start - end) / 2.0 * (1 + math.cos(math.pi * percentage))
+
+    @staticmethod
+    def _annealing_linear(start, end, percentage):
+        """ Linear annealing from start to end as percentage goes from 0.0 to 1.0.
+        """
+        return (end - start) * percentage + start
+
+    def get_new_bs(self) -> int:
+        """ Returns the next batch size as an :class:`int`. Increases the batch size from base batch size to maximum
+        batch and restarts. The implementation is similar to
+        torch.optim.lr_scheduler.CosineAnnealingWarmRestarts, but instead of `eta_min` we use max_batch_size, and we
+        increase the batch size instead of decreasing the learning rate. We clip the values to always remain within
+        bound.
+        """
+        if self.last_epoch == 0:  # Don't do anything at initialization.
+            return self.batch_size
+
+        if self.last_epoch <= self.end_step_1:
+            # Phase 1
+            percentage = self.last_epoch / self.end_step_1
+            new_bs = self.anneal_fn(self.base_batch_size, self.min_batch_size, percentage)
+        else:
+            # Phase 2
+            percentage = (self.last_epoch - self.end_step_1) / self.end_step_2
+            new_bs = self.anneal_fn(self.min_batch_size, self.max_batch_size, percentage)
+
+            if percentage == 1.0:
+                self._finished = True
+
+        return clip(rint(new_bs), min=self.min_batch_size, max=self.max_batch_size)

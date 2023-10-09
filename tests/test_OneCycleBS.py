@@ -1,0 +1,82 @@
+import unittest
+
+from bs_scheduler import OneCycleBS
+from tests.test_utils import create_dataloader, fashion_mnist, \
+    get_batch_sizes_across_epochs, BSTest, rint
+
+
+class TestCosineAnnealingBS(BSTest):
+    def setUp(self):
+        self.base_batch_size = 64
+        self.dataset = fashion_mnist()
+        # TODO: Test multiple dataloaders: dataloader with workers, dataloaders with samplers, with drop last and
+        #  without drop last and so on.
+
+    def test_dataloader_batch_size_linear(self):
+        base_batch_size = 40
+        n_epochs = 120
+        max_batch_size = 80
+        min_batch_size = 10
+        total_steps = 100
+        decay_percentage = 0.3
+        strategy = 'linear'
+
+        dataloader = create_dataloader(self.dataset, batch_size=base_batch_size)
+        scheduler = OneCycleBS(dataloader, total_steps=total_steps, decay_percentage=decay_percentage,
+                               strategy=strategy, max_batch_size=max_batch_size, min_batch_size=min_batch_size)
+
+        batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
+        phase_1 = list(range(40, 10, -1))
+        phase_2 = list(range(10, 80, 1))
+        end = [max_batch_size] * 20
+        expected_batch_sizes = phase_1 + phase_2 + end
+
+        self.assertEqual(batch_sizes, expected_batch_sizes)
+
+    def test_dataloader_batch_size_cos(self):
+        base_batch_size = 40
+        n_epochs = 120
+        max_batch_size = 80
+        min_batch_size = 10
+        total_steps = 100
+        decay_percentage = 0.3
+        strategy = 'cos'
+
+        dataloader = create_dataloader(self.dataset, batch_size=base_batch_size)
+        scheduler = OneCycleBS(dataloader, total_steps=total_steps, decay_percentage=decay_percentage,
+                               strategy=strategy, max_batch_size=max_batch_size, min_batch_size=min_batch_size)
+
+        batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
+        phase_1 = [40, 40, 40, 39, 39, 38, 37, 36, 35, 34, 32, 31, 30, 28, 27, 25, 23, 22, 20, 19, 18, 16, 15, 14, 13,
+                   12, 11, 11, 10, 10, 10]
+        phase_2 = [10, 10, 10, 11, 11, 11, 12, 12, 13, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 26, 27, 28, 30,
+                   31, 33, 34, 36, 37, 39, 40, 42, 43, 45, 47, 48, 50, 51, 53, 54, 56, 57, 59, 60, 62, 63, 64, 66, 67,
+                   68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 77, 78, 78, 79, 79, 79, 80, 80, 80]
+        end = [80] * 20
+        expected_batch_sizes = phase_1 + phase_2 + end
+
+        self.assertEqual(batch_sizes, expected_batch_sizes)
+
+    def test_loading_and_unloading(self):
+        base_batch_size = 40
+        max_batch_size = 80
+        min_batch_size = 10
+        total_steps = 100
+        decay_percentage = 0.3
+        strategy = 'cos'
+
+        dataloader = create_dataloader(self.dataset, batch_size=base_batch_size)
+        scheduler = OneCycleBS(dataloader, total_steps=total_steps, decay_percentage=decay_percentage,
+                               strategy=strategy, max_batch_size=max_batch_size, min_batch_size=min_batch_size)
+
+        self.reloading_scheduler(scheduler)
+        self.torch_save_and_load(scheduler)
+        scheduler.step()
+        self.assertEqual(scheduler.end_step_1, rint(decay_percentage * total_steps))
+
+
+if __name__ == "__main__":
+    from multiprocessing import freeze_support
+
+    freeze_support()
+    unittest.main()
