@@ -13,7 +13,7 @@ from torch.utils.data import DataLoader, Dataset
 
 __all__ = ['LambdaBS', 'MultiplicativeBS', 'StepBS', 'MultiStepBS', 'ConstantBS', 'LinearBS', 'ExponentialBS',
            'SequentialBS', 'PolynomialBS', 'CosineAnnealingBS', 'ChainedBSScheduler', 'IncreaseBSOnPlateau', 'CyclicBS',
-           'BSScheduler', 'BatchSizeManager']
+           'CosineAnnealingBSWithWarmRestarts', 'BSScheduler', 'BatchSizeManager']
 
 
 def rint(x: float) -> int:
@@ -906,7 +906,7 @@ class CosineAnnealingBS(BSScheduler):
         >>> # bs = 67 if epoch % 10 == 7
         >>> # bs = 37 if epoch % 10 == 8
         >>> # bs = 13 if epoch % 10 == 9
-        >>> scheduler = CosineAnnealingBS(dataloader, total_iters=5, power=1.0)
+        >>> scheduler = CosineAnnealingBS(dataloader, total_iters=5)
         >>> for epoch in range(100):
         >>>     train(...)
         >>>     validate(...)
@@ -920,6 +920,7 @@ class CosineAnnealingBS(BSScheduler):
 
         self.total_iters: int = total_iters
         super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
+        self.base_batch_size: int = self.dataloader._base_batch_size
 
     def get_new_bs(self) -> int:
         """ Returns the next batch size as an :class:`int`. Increases the batch size from base batch size to maximum
@@ -927,23 +928,21 @@ class CosineAnnealingBS(BSScheduler):
         torch.optim.lr_scheduler.CosineAnnealingLR.get_lr() and instead of `eta_min` we use `self.max_batch_size` and
         we clip the values to be within bounds.
         """
-        base_batch_size = self.dataloader._base_batch_size
-
         if self.last_epoch == 0:
             return self.batch_size
 
-        if self.last_epoch == 1 and base_batch_size == self.batch_size:
-            new_bs = self.max_batch_size + (base_batch_size - self.max_batch_size) * (
+        if self.last_epoch == 1 and self.base_batch_size == self.batch_size:
+            new_bs = self.max_batch_size + (self.base_batch_size - self.max_batch_size) * (
                     1 + math.cos(self.last_epoch * math.pi / self.total_iters)) / 2
         elif (self.last_epoch - 1 - self.total_iters) % (2 * self.total_iters) == 0:
-            new_bs = self.batch_size + (base_batch_size - self.max_batch_size) * (
+            new_bs = self.batch_size + (self.base_batch_size - self.max_batch_size) * (
                     1 - math.cos(math.pi / self.total_iters)) / 2
         else:
             new_bs = (1 + math.cos(math.pi * self.last_epoch / self.total_iters)) / (
                     1 + math.cos(math.pi * (self.last_epoch - 1) / self.total_iters)) * (
                              self.batch_size - self.max_batch_size) + self.max_batch_size
 
-        return clip(rint(new_bs), min=base_batch_size, max=self.max_batch_size)
+        return clip(rint(new_bs), min=self.base_batch_size, max=self.max_batch_size)
 
 
 class ChainedBSScheduler(BSScheduler):
@@ -1358,3 +1357,73 @@ class CyclicBS(BSScheduler):
         """
         super().load_state_dict(state_dict)
         self._init_scale_fn()
+
+
+class CosineAnnealingBSWithWarmRestarts(BSScheduler):
+    """ Similar to torch.optim.lr_scheduler.CosineAnnealingWarmRestarts which implements `SGDR: Stochastic Gradient
+    Descent with Warm Restarts`_.
+    # TODO: Explain a bit.
+    # For batch size, we perform reverse annealing and instead
+    of decreasing the batch size to min_batch_size we increase it to max_batch_size.
+
+    Args:
+        dataloader (DataLoader): Wrapped dataloader.
+        t_0 (int): The number of iterations for the first restart.
+        factor (int): The factor with which :math:`t_{i}` is increased after a restart. Default: 1.
+        batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
+            which provides a getter and setter for the batch size. Default: None.
+        max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
+            in the memory. If None or greater than the lenght of the dataset wrapped by the dataloader, max_batch_size
+            is set to `len(self.dataloader.dataset)`. Default: None.
+        min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
+        verbose (bool): If ``True``, prints a message to stdout for each update. Default: ``False``.
+
+    .. _SGDR\\: Stochastic Gradient Descent with Warm Restarts: https://arxiv.org/abs/1608.03983
+
+    Example:
+        >>> dataloader = ...
+        >>> # Assuming the base batch size is 10.
+        >>> # bs = 10 if last_epoch % 6 == 0
+        >>> # bs = 19 if last_epoch % 6 == 1
+        >>> # bs = 41 if last_epoch % 6 == 2
+        >>> # bs = 69 if last_epoch % 6 == 3
+        >>> # bs = 91 if last_epoch % 6 == 4
+        >>> # bs = 100 if last_epoch % 6 == 5
+        >>> scheduler = CosineAnnealingBSWithWarmRestarts(dataloader, 10)
+        >>> for epoch in range(100):
+        >>>     for batch in dataloader:
+        >>>         train_batch(...)
+        >>>         scheduler.step()
+    """
+
+    def __init__(self, dataloader: DataLoader, t_0: int, factor: int = 1,
+                 batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
+                 min_batch_size: int = 1, verbose: bool = False):
+        assert isinstance(t_0, int) and t_0 > 0
+        assert isinstance(factor, int) and factor > 0
+
+        self.t_0: int = t_0
+        self.t_i: int = t_0
+        self.t_cur: int = 0
+        self.factor: int = factor
+        super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
+        self.base_batch_size: int = self.dataloader._base_batch_size
+
+    def get_new_bs(self) -> int:
+        """ Returns the next batch size as an :class:`int`. Increases the batch size from base batch size to maximum
+        batch and restarts. The implementation is similar to
+        torch.optim.lr_scheduler.CosineAnnealingWarmRestarts, but instead of `eta_min` we use max_batch_size, and we
+        increase the batch size instead of decreasing the learning rate. We clip the values to always remain within
+        bound.
+        """
+        if self.last_epoch == 0:  # Don't do anything at initialization.
+            return self.batch_size
+
+        self.t_cur += 1
+        if self.t_cur > self.t_i:  # > so that we reach max_batch_size
+            self.t_cur -= self.t_i + 1  # + 1 so that we go back to base_batch_size
+            self.t_i *= self.factor
+
+        new_bs = self.base_batch_size + (self.max_batch_size - self.base_batch_size) * (
+                1 + math.cos(math.pi + math.pi * self.t_cur / self.t_i)) / 2
+        return clip(rint(new_bs), min=self.base_batch_size, max=self.max_batch_size)
