@@ -13,7 +13,7 @@ from torch.utils.data import DataLoader, Dataset
 
 __all__ = ['LambdaBS', 'MultiplicativeBS', 'StepBS', 'MultiStepBS', 'ConstantBS', 'LinearBS', 'ExponentialBS',
            'SequentialBS', 'PolynomialBS', 'CosineAnnealingBS', 'ChainedBSScheduler', 'IncreaseBSOnPlateau', 'CyclicBS',
-           'CosineAnnealingBSWithWarmRestarts', 'BSScheduler', 'BatchSizeManager']
+           'CosineAnnealingBSWithWarmRestarts', 'OneCycleBS', 'BSScheduler', 'BatchSizeManager']
 
 
 def rint(x: float) -> int:
@@ -1368,6 +1368,8 @@ class CosineAnnealingBSWithWarmRestarts(BSScheduler):
     learning rate for :math:`t_{i}` iterations and then restarts, we increase the batch size from base_batch_size to
     max_batch_size in :math:`t_{i} + 1` iterations, then the batch size is restarted.
 
+    This scheduler can be used after every batch.
+
     Args:
         dataloader (DataLoader): Wrapped dataloader.
         t_0 (int): The number of iterations for the first restart is t_0 + 1.
@@ -1421,6 +1423,7 @@ class CosineAnnealingBSWithWarmRestarts(BSScheduler):
         increase the batch size instead of decreasing the learning rate. We clip the values to always remain within
         bound.
         """
+        # TODO: pass values!
         if self.last_epoch == 0:  # Don't do anything at initialization.
             return self.batch_size
 
@@ -1432,3 +1435,106 @@ class CosineAnnealingBSWithWarmRestarts(BSScheduler):
         new_bs = self.base_batch_size + (self.max_batch_size - self.base_batch_size) * (
                 1 + math.cos(math.pi + math.pi * self.t_cur / self.t_i)) / 2
         return clip(rint(new_bs), min=self.base_batch_size, max=self.max_batch_size)
+
+
+class OneCycleBS(BSScheduler):
+    """ Similar to torch.optim.lr_scheduler.OneCycleLR. Sets the batch size according to the one cycle batch size
+    policy, inspired from the 1cycle learning rate policy. The one cycle batch size policy decreases the batch size
+    from the base_batch_size to some minimum batch size and that it increases it to some maximum batch size. bigger
+    than the base_batch_size.
+    This policy is inspired from the policy described in the paper `Super-Convergence: Very Fast Training of Neural
+    Networks Using Large Learning Rates`_. It only uses two phases (base -> min, min -> max) instead of the three
+    phases described in the paper (base -> min, min -> base, base -> max).
+
+    The once cycle batch size policy changes the batch size after every batch. The step() function should be called
+    after a batch has been used for training. But it may also be called after every epoch and the total_steps should be
+    adjusted accordingly.
+
+    This scheduler is not chainable.
+
+    Args:
+        dataloader (DataLoader): Wrapped dataloader.
+        total_steps (int): The total number of steps in the cycle.
+        decay_percentage (float): The fraction of the cycle spend decreasing the batch size. 1 - decay_percentage will
+            be spent increasing the batch size. Default: 0.3.
+        base_batch_size (Union[int, None]): The base_batch_size that should be used. If None, the base_batch_size of
+            the dataloader will be used. Default: None.
+        strategy (str): One of `cos`, `linear`. Specifies the strategy used for annealing the batch size, 'cos' for
+            cosine annealing, 'linear' for linear annealing. Default: 'cos'.
+        batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
+            which provides a getter and setter for the batch size. Default: None.
+        max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
+            in the memory. If None or greater than the lenght of the dataset wrapped by the dataloader, max_batch_size
+            is set to `len(self.dataloader.dataset)`. Default: None.
+        min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
+        verbose (bool): If ``True``, prints a message to stdout for each update. Default: ``False``.
+
+    Example:
+            >>> dataloader = ...
+            >>> scheduler = OneCycleBS(dataloader, total_steps=1000)
+            >>> for epoch in range(100):
+            >>>     for batch in dataloader:
+            >>>         train_batch(...)
+            >>>         scheduler.step()
+
+    .. _Super-Convergence\\: Very Fast Training of Neural Networks Using Large Learning Rates:
+        https://arxiv.org/abs/1708.07120
+    """
+
+    def __init__(self, dataloader: DataLoader, total_steps: int, decay_percentage: float = 0.3,
+                 base_batch_size: Union[int, None] = None, strategy: str = 'cos',
+                 batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
+                 min_batch_size: int = 1, verbose: bool = False):
+        assert isinstance(total_steps, int)
+        assert isinstance(decay_percentage, float) and 0 < decay_percentage < 1
+        assert rint(total_steps * decay_percentage) > 0 and total_steps - rint(total_steps * decay_percentage) > 0
+        assert base_batch_size is None or (isinstance(base_batch_size, int) and base_batch_size > min_batch_size)
+        assert strategy in ('cos', 'linear')
+
+        self.end_step_1: int = rint(total_steps * decay_percentage)
+        self.end_step_2: int = total_steps - self.end_step_1  # TODO: -1
+
+        self.strategy: str = strategy
+        if strategy == 'cos':
+            self.anneal_fn = self._annealing_cos
+        else:
+            self.anneal_fn = self._annealing_linear
+
+        super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
+        self.base_batch_size: int = self.dataloader._base_batch_size if base_batch_size is None else base_batch_size
+
+    @staticmethod
+    def _annealing_cos(start, end, percentage):
+        """ Cosine annealing from start to end as percentage goes from 0.0 to 1.0.
+        """
+        return end + (start - end) / 2.0 * (1 + math.cos(math.pi * percentage))
+
+    @staticmethod
+    def _annealing_linear(start, end, percentage):
+        """ Linear annealing from start to end as percentage goes from 0.0 to 1.0.
+        """
+        return (end - start) * percentage + start
+
+    def get_new_bs(self) -> int:
+        """ Returns the next batch size as an :class:`int`. Increases the batch size from base batch size to maximum
+        batch and restarts. The implementation is similar to
+        torch.optim.lr_scheduler.CosineAnnealingWarmRestarts, but instead of `eta_min` we use max_batch_size, and we
+        increase the batch size instead of decreasing the learning rate. We clip the values to always remain within
+        bound.
+        """
+        if self.last_epoch == 0:  # Don't do anything at initialization.
+            return self.batch_size
+
+        if self.last_epoch <= self.end_step_1:
+            # Phase 1
+            percentage = self.last_epoch / self.end_step_1
+            new_bs = self.anneal_fn(self.base_batch_size, self.min_batch_size, percentage)
+        else:
+            # Phase 2
+            percentage = (self.last_epoch - self.end_step_1) / self.end_step_2
+            new_bs = self.anneal_fn(self.min_batch_size, self.max_batch_size, percentage)
+
+            if percentage == 1.0:
+                self._finished = True
+
+        return clip(rint(new_bs), min=self.min_batch_size, max=self.max_batch_size)
