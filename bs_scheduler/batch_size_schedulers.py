@@ -681,18 +681,10 @@ class SequentialBS(BSScheduler):
     given the milestone points that reflect which scheduler is supposed to be called at a fiven epoch
 
     Args:
-        dataloader (DataLoader): Wrapped dataloader.
         schedulers (Sequence[BSScheduler]): Sequence of batch size schedulers. We expect the first scheduler to have
             been initialized first.
         milestones (Sequence[int]): Sequence of integers that reflects the milestone points. Must be sorted in a
             non-descending order.
-        batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
-            which provides a getter and setter for the batch size. Default: None.
-        max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
-            in the memory. If None or greater than the lenght of the dataset wrapped by the dataloader, max_batch_size
-            is set to `len(self.dataloader.dataset)`. Default: None.
-        min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
-        verbose (bool): Does nothing.
 
     Example:
         >>> dataloader = ...
@@ -713,11 +705,7 @@ class SequentialBS(BSScheduler):
         >>>     scheduler.step()
     """
 
-    def __init__(self, dataloader: DataLoader, schedulers: Sequence[BSScheduler], milestones=Sequence[int],
-                 batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
-                 min_batch_size: int = 1, verbose: bool = False):
-        # Doing the initialization first, all checks later. In the initial step called in constructor we do nothing.
-        super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
+    def __init__(self, schedulers: Sequence[BSScheduler], milestones=Sequence[int]):
 
         assert isinstance(schedulers, (tuple, list)) and len(schedulers) >= 2 and all(
             [isinstance(x, BSScheduler) for x in schedulers])
@@ -730,10 +718,14 @@ class SequentialBS(BSScheduler):
             raise ValueError(f"SequentialBS expects the number of schedulers provided to be one more than the number "
                              f"of milestone points, but got {len(schedulers)} and the number of milestones is "
                              f"{len(milestones)}")
+
+        super().__init__(schedulers[0].dataloader, schedulers[0].batch_size_manager, schedulers[0].max_batch_size,
+                         schedulers[0].min_batch_size, verbose=False)
+
         for i in range(len(schedulers)):
             if schedulers[i].dataloader != self.dataloader:
                 raise ValueError(f"SequentialBS expects all schedulers to belong to the same dataloader, but got "
-                                 f"scheduler at index {i} to be different than the dataloader passed in.")
+                                 f"scheduler at index {i} to be different than the scheduler at index 0.")
             if not isinstance(schedulers[i].batch_size_manager, type(self.batch_size_manager)):
                 raise ValueError(f"SequentialBS expects all schedulers to have the same batch size manager, but got "
                                  f"scheduler at index {i} to have a different batch size manager. Expected type of "
@@ -743,7 +735,7 @@ class SequentialBS(BSScheduler):
             if schedulers[i].max_batch_size > self.max_batch_size:
                 self.max_batch_size = schedulers[i].max_batch_size
             if schedulers[i].min_batch_size < self.min_batch_size:
-               self.min_batch_size = schedulers[i].min_batch_size
+                self.min_batch_size = schedulers[i].min_batch_size
 
             # Undoing the steps done by the schedulers.
             schedulers[i]._last_bs = self.dataloader._base_batch_size
@@ -997,6 +989,8 @@ class ChainedBSScheduler(BSScheduler):
         self.max_batch_size: int = self.schedulers[-1].max_batch_size
         self.min_batch_size: int = self.schedulers[-1].min_batch_size
         self._finished: bool = False
+        self._init_get_new_bs()
+        # TODO: Validate that everything is initialized
 
     def step(self, **kwargs):
         """ Executes the step() function for all schedulers in order.
