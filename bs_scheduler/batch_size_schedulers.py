@@ -918,6 +918,9 @@ class CosineAnnealingBS(BSScheduler):
                  min_batch_size: int = 1, verbose: bool = False):
         assert isinstance(total_iters, int) and total_iters > 1
 
+        # Should we accept the base_batch_size and upper_batch_size as parameters, and use upper_batch_size instead of
+        # max batch size?
+
         self.total_iters: int = total_iters
         super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
         self.base_batch_size: int = self.dataloader._base_batch_size
@@ -1361,14 +1364,13 @@ class CyclicBS(BSScheduler):
 
 class CosineAnnealingBSWithWarmRestarts(BSScheduler):
     """ Similar to torch.optim.lr_scheduler.CosineAnnealingWarmRestarts which implements `SGDR: Stochastic Gradient
-    Descent with Warm Restarts`_.
-    # TODO: Explain a bit.
-    # For batch size, we perform reverse annealing and instead
-    of decreasing the batch size to min_batch_size we increase it to max_batch_size.
+    Descent with Warm Restarts`_. Unlike torch.optim.lr_scheduler.CosineAnnealingWarmRestarts, which decreases the
+    learning rate for :math:`t_{i}` iterations and then restarts, we increase the batch size from base_batch_size to
+    max_batch_size in :math:`t_{i} + 1` iterations, then the batch size is restarted.
 
     Args:
         dataloader (DataLoader): Wrapped dataloader.
-        t_0 (int): The number of iterations for the first restart.
+        t_0 (int): The number of iterations for the first restart is t_0 + 1.
         factor (int): The factor with which :math:`t_{i}` is increased after a restart. Default: 1.
         batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
             which provides a getter and setter for the batch size. Default: None.
@@ -1401,6 +1403,9 @@ class CosineAnnealingBSWithWarmRestarts(BSScheduler):
                  min_batch_size: int = 1, verbose: bool = False):
         assert isinstance(t_0, int) and t_0 > 0
         assert isinstance(factor, int) and factor > 0
+
+        # Should we accept the base_batch_size and upper_batch_size as parameters, and use upper_batch_size instead of
+        # max batch size?
 
         self.t_0: int = t_0
         self.t_i: int = t_0
