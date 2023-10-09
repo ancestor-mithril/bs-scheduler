@@ -991,7 +991,7 @@ class ChainedBSScheduler(BSScheduler):
         self.min_batch_size: int = min([x.min_batch_size for x in self.schedulers])
         self._finished: bool = False
         # self.verbose: bool = False
-        # self.verbose: bool = 0
+        # self.last_epoch: int = 0
         self._init_get_new_bs()
 
     def step(self, **kwargs):
@@ -1309,7 +1309,7 @@ class CyclicBS(BSScheduler):
 
     def get_new_bs(self) -> int:
         """ Returns the next batch size as an :class:`int`. The value of the batch size cycles from base_batch_size to
-        upper_batch_size_bound and back, while being scaled at each iteration.
+        max_batch_size and back, while being scaled at each iteration.
         """
         if self.last_epoch == 0:  # Don't do anything at initialization.
             return self.batch_size
