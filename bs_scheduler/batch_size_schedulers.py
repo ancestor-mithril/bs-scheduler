@@ -33,7 +33,7 @@ def clip(x: int, min: int, max: int) -> int:
 
 def check_isinstance(x, instance: type):
     if not isinstance(x, instance):
-        raise TypeError(f"{type(x).__name__} is not a {x.__name__}.")
+        raise TypeError(f"{type(x).__name__} is not a {instance.__name__}.")
 
 
 class BatchSizeManager:
