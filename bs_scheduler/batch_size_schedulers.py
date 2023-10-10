@@ -284,7 +284,7 @@ class LambdaBS(BSScheduler):
         min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
         verbose (bool): If ``True``, prints a message to stdout for each update. Default: ``False``.
 
-    Example:
+    Examples:
         >>> dataloader = ...
         >>> func = lambda epoch: 1.05 ** epoch
         >>> scheduler = LambdaBS(dataloader, bs_lambda=func)
@@ -348,7 +348,7 @@ class MultiplicativeBS(BSScheduler):
         min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
         verbose (bool): If ``True``, prints a message to stdout for each update. Default: ``False``.
 
-    Example:
+    Examples:
         >>> dataloader = ...
         >>> func = lambda epoch: 1.05
         >>> scheduler = MultiplicativeBS(dataloader, bs_lambda=func)
@@ -410,7 +410,7 @@ class StepBS(BSScheduler):
         min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
         verbose (bool): If ``True``, prints a message to stdout for each update. Default: ``False``.
 
-    Example:
+    Examples:
         >>> dataloader = ...
         >>> # Assuming the base batch size is 10.
         >>> # bs = 10 if epoch < 30
@@ -457,7 +457,7 @@ class MultiStepBS(BSScheduler):
         min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
         verbose (bool): If ``True``, prints a message to stdout for each update. Default: ``False``.
 
-    Example:
+    Examples:
         >>> dataloader = ...
         >>> # Assuming the base batch size is 10.
         >>> # bs = 10 if epoch < 30
@@ -521,7 +521,7 @@ class ConstantBS(BSScheduler):
         min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
         verbose (bool): If ``True``, prints a message to stdout for each update. Default: ``False``.
 
-    Example:
+    Examples:
         >>> dataloader = ...
         >>> # Assuming the base batch size is 10.
         >>> # bs = 50 if epoch == 0
@@ -586,7 +586,7 @@ class LinearBS(BSScheduler):
         min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
         verbose (bool): If ``True``, prints a message to stdout for each update. Default: ``False``.
 
-    Example:
+    Examples:
         >>> dataloader = ...
         >>> # Assuming the base batch size is 10.
         >>> # bs = 60 if epoch == 0
@@ -645,7 +645,7 @@ class ExponentialBS(BSScheduler):
         min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
         verbose (bool): If ``True``, prints a message to stdout for each update. Default: ``False``.
 
-    Example:
+    Examples:
         >>> dataloader = ...
         >>> # Assuming the base batch size is 10.
         >>> # bs = 10 if epoch == 0
@@ -687,7 +687,7 @@ class SequentialBS(BSScheduler):
         milestones (Sequence[int]): Sequence of integers that reflects the milestone points. Must be sorted in a
             non-descending order.
 
-    Example:
+    Examples:
         >>> dataloader = ...
         >>> # Assuming the base batch size is 10.
         >>> # bs = 100 if epoch == 0
@@ -825,7 +825,7 @@ class PolynomialBS(BSScheduler):
         min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
         verbose (bool): If ``True``, prints a message to stdout for each update. Default: ``False``.
 
-    Example:
+    Examples:
         >>> dataloader = ...
         >>> # Assuming the base batch size is 10.
         >>> # bs = 10 if epoch == 0
@@ -883,7 +883,7 @@ class CosineAnnealingBS(BSScheduler):
 
     .. _SGDR\\: Stochastic Gradient Descent with Warm Restarts: https://arxiv.org/abs/1608.03983
 
-    Example:
+    Examples:
         >>> dataloader = ...
         >>> # Assuming the base batch size is 10.
         >>> # bs = 10 if epoch % 10 == 0
@@ -944,7 +944,8 @@ class ChainedBSScheduler(BSScheduler):
 
     Args:
         schedulers (Sequence[BSScheduler]): List of chained schedulers.
-    Example:
+
+    Examples:
         >>> dataloader = ...
         >>> # Assuming the base batch size is 10.
         >>> # bs = 100 if epoch == 0
@@ -1073,7 +1074,7 @@ class IncreaseBSOnPlateau(BSScheduler):
         min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
         verbose (bool): If ``True``, prints a message to stdout for each update. Default: ``False``.
 
-    Example:
+    Examples:
         >>> dataloader = ...
         >>> scheduler = IncreaseBSOnPlateau(dataloader)
         >>> for epoch in range(100):
@@ -1239,7 +1240,7 @@ class CyclicBS(BSScheduler):
         min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
         verbose (bool): If ``True``, prints a message to stdout for each update. Default: ``False``.
 
-    Example:
+    Examples:
         >>> dataloader = ...
         >>> scheduler = CyclicBS(dataloader)
         >>> for epoch in range(100):
@@ -1376,7 +1377,7 @@ class CosineAnnealingBSWithWarmRestarts(BSScheduler):
 
     .. _SGDR\\: Stochastic Gradient Descent with Warm Restarts: https://arxiv.org/abs/1608.03983
 
-    Example:
+    Examples:
         >>> dataloader = ...
         >>> # Assuming the base batch size is 10.
         >>> # bs = 10 if last_epoch % 6 == 0
@@ -1459,7 +1460,7 @@ class OneCycleBS(BSScheduler):
         min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
         verbose (bool): If ``True``, prints a message to stdout for each update. Default: ``False``.
 
-    Example:
+    Examples:
             >>> dataloader = ...
             >>> scheduler = OneCycleBS(dataloader, total_steps=1000)
             >>> for epoch in range(100):
