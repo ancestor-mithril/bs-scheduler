@@ -1,0 +1,12 @@
+site_name: BS Scheduler
+
+theme:
+  name: "material"
+
+plugins:
+  - mkdocstrings
+
+nav:
+  - index.md
+#  - reference.md
+#  - tutorials.md
