@@ -4,7 +4,7 @@ A Batch Size Scheduler library compatible with PyTorch DataLoaders.
 
 *** 
 
-Documentation: TODO.
+Documentation: [API Reference](https://ancestor-mithril.github.io/bs_scheduler/).
 
 Examples: TODO.
 
