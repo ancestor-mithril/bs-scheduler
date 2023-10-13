@@ -1,6 +1,6 @@
 [project]
 name = "bs_scheduler"
-version = "0.3.0"
+version = "0.3.1"
 requires-python = ">=3.9"
 description = "A PyTorch Dataloader compatible batch size scheduler library."
 readme = "README.md"
@@ -34,4 +34,9 @@ dependencies = [
 [project.urls]
 repository = "https://github.com/ancestor-mithril/bs_scheduler"
 
-#[project.optional-dependencies]
+[project.optional-dependencies]
+docs = [
+    "mkdocs",
+    "mkdocstrings[python]",
+    "mkdocs-material",
+]
