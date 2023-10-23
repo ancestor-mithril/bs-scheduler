@@ -930,9 +930,13 @@ class CosineAnnealingBS(BSScheduler):
             new_bs = self.batch_size + (self.base_batch_size - self.max_batch_size) * (
                     1 - math.cos(math.pi / self.total_iters)) / 2
         else:
+            if self.batch_size == self.max_batch_size and self.last_epoch % self.total_iters < self.total_iters / 2:
+                bs_diff = -1
+            else:
+                bs_diff = self.batch_size - self.max_batch_size
+
             new_bs = (1 + math.cos(math.pi * self.last_epoch / self.total_iters)) / (
-                    1 + math.cos(math.pi * (self.last_epoch - 1) / self.total_iters)) * (
-                             self.batch_size - self.max_batch_size) + self.max_batch_size
+                    1 + math.cos(math.pi * (self.last_epoch - 1) / self.total_iters)) * bs_diff + self.max_batch_size
 
         return clip(rint(new_bs), min=self.base_batch_size, max=self.max_batch_size)
 
