@@ -913,6 +913,7 @@ class CosineAnnealingBS(BSScheduler):
         super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
         self.base_batch_size: int = self.dataloader._base_batch_size if base_batch_size is None else base_batch_size
         assert self.max_batch_size > self.base_batch_size
+        self._float_batch_size: float = self.base_batch_size
 
     def get_new_bs(self) -> int:
         """ Returns the next batch size as an :class:`int`. Increases the batch size from base batch size to maximum
@@ -930,14 +931,11 @@ class CosineAnnealingBS(BSScheduler):
             new_bs = self.batch_size + (self.base_batch_size - self.max_batch_size) * (
                     1 - math.cos(math.pi / self.total_iters)) / 2
         else:
-            if self.batch_size == self.max_batch_size and self.last_epoch % self.total_iters < self.total_iters / 2:
-                bs_diff = -1
-            else:
-                bs_diff = self.batch_size - self.max_batch_size
-
             new_bs = (1 + math.cos(math.pi * self.last_epoch / self.total_iters)) / (
-                    1 + math.cos(math.pi * (self.last_epoch - 1) / self.total_iters)) * bs_diff + self.max_batch_size
+                    1 + math.cos(math.pi * (self.last_epoch - 1) / self.total_iters)) * (
+                    self._float_batch_size - self.max_batch_size) + self.max_batch_size
 
+        self._float_batch_size = new_bs
         return clip(rint(new_bs), min=self.base_batch_size, max=self.max_batch_size)
 
 
