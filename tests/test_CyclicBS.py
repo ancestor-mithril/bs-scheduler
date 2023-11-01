@@ -145,6 +145,80 @@ class TestConstantBS(BSTest):
         scheduler.step()
         self.assertEqual(scheduler.scale_fn(rint(random.random() * 1000)), 0.25)
 
+    def test_graphic_triangular2(self):
+        import matplotlib.pyplot as plt
+        import torch
+        import warnings
+        warnings.filterwarnings("ignore", category=UserWarning)
+
+        base_batch_size = 10
+        dataloader = create_dataloader(self.dataset, batch_size=base_batch_size)
+        max_batch_size = 100
+        step_size_up = 10
+        gamma = 0.9
+        scheduler = CyclicBS(dataloader, base_batch_size=base_batch_size, max_batch_size=max_batch_size,
+                             step_size_up=step_size_up, mode='triangular2', gamma=gamma)
+        n_epochs = 4 * step_size_up
+
+        batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
+        plt.plot(batch_sizes)
+        plt.savefig("CyclicBS-triangular2.png")
+        plt.close()
+
+        model = torch.nn.Linear(10, 10)
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+        scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.001, max_lr=0.01, mode='triangular2',
+                                                      gamma=gamma, step_size_up=step_size_up)
+        learning_rates = []
+
+        def get_lr(optimizer):
+            for param_group in optimizer.param_groups:
+                return param_group['lr']
+
+        for _ in range(n_epochs):
+            learning_rates.append(get_lr(optimizer))
+            scheduler.step()
+        plt.plot(learning_rates)
+        plt.savefig("CyclicLR-triangular2.png")
+        plt.close()
+
+    def test_graphic_exp_range(self):
+        import matplotlib.pyplot as plt
+        import torch
+        import warnings
+        warnings.filterwarnings("ignore", category=UserWarning)
+
+        base_batch_size = 10
+        dataloader = create_dataloader(self.dataset, batch_size=base_batch_size)
+        max_batch_size = 100
+        step_size_up = 50
+        gamma = 0.9
+        scheduler = CyclicBS(dataloader, base_batch_size=base_batch_size, max_batch_size=max_batch_size,
+                             step_size_up=step_size_up, mode='exp_range', gamma=gamma)
+        n_epochs = 10 * step_size_up
+
+        batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
+        plt.plot(batch_sizes)
+        plt.savefig("CyclicBS-exp_range.png")
+        plt.close()
+
+        model = torch.nn.Linear(10, 10)
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+        scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.001, max_lr=0.01, mode='exp_range',
+                                                      gamma=gamma, step_size_up=step_size_up)
+        learning_rates = []
+
+        def get_lr(optimizer):
+            for param_group in optimizer.param_groups:
+                return param_group['lr']
+
+        for _ in range(n_epochs):
+            learning_rates.append(get_lr(optimizer))
+            scheduler.step()
+        plt.plot(learning_rates)
+        plt.savefig("CyclicLR-exp_range.png")
+        plt.close()
+
 
 if __name__ == "__main__":
     from multiprocessing import freeze_support
