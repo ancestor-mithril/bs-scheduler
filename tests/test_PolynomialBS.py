@@ -68,7 +68,7 @@ class TestPolynomialBS(BSTest):
 
         model = torch.nn.Linear(10, 10)
         optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
-        scheduler = torch.optim.lr_scheduler.PolynomialLR(optimizer, total_iters=total_iters, power=0.5)
+        scheduler = torch.optim.lr_scheduler.PolynomialLR(optimizer, total_iters=total_iters, power=0.1)
         learning_rates = []
 
         def get_lr(optimizer):

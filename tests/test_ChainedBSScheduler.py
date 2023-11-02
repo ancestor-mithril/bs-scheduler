@@ -73,7 +73,7 @@ class TestChainedBSScheduler(BSTest):
         model = torch.nn.Linear(10, 10)
         optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
         scheduler1 = torch.optim.lr_scheduler.ConstantLR(optimizer, factor=0.1, total_iters=4)
-        scheduler2 = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
+        scheduler2 = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=1.0 / 1.1)
         scheduler = torch.optim.lr_scheduler.ChainedScheduler([scheduler1, scheduler2])
         learning_rates = []
 

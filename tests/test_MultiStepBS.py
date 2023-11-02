@@ -80,7 +80,7 @@ class TestMultiStepBS(BSTest):
 
         model = torch.nn.Linear(10, 10)
         optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
-        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=milestones, gamma=gamma)
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=milestones, gamma=1.0 / gamma)
         learning_rates = []
 
         def get_lr(optimizer):
