@@ -61,7 +61,8 @@ class TestCosineAnnealingBS(BSTest):
         n_epochs = 60
         max_batch_size = 100
         dataloader = create_dataloader(self.dataset, batch_size=base_batch_size)
-        scheduler = CosineAnnealingBSWithWarmRestarts(dataloader, t_0=t_0, factor=t_0 // 2, max_batch_size=max_batch_size)
+        scheduler = CosineAnnealingBSWithWarmRestarts(dataloader, t_0=t_0, factor=t_0 // 2,
+                                                      max_batch_size=max_batch_size)
 
         batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
         plt.plot(batch_sizes)
@@ -70,7 +71,8 @@ class TestCosineAnnealingBS(BSTest):
 
         model = torch.nn.Linear(10, 10)
         optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=t_0, T_mult=t_0 // 2, eta_min=0.001)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=t_0, T_mult=t_0 // 2,
+                                                                         eta_min=0.001)
         learning_rates = []
 
         def get_lr(optimizer):

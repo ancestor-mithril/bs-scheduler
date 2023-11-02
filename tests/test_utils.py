@@ -63,9 +63,14 @@ def get_batch_size(dataloader):
 
 def get_batch_sizes_across_epochs(dataloader, scheduler, epochs):
     batch_sizes = []
-    for _ in range(epochs):
-        batch_sizes.append(get_batch_size(dataloader))
-        scheduler.step()
+    if isinstance(epochs, (tuple, list)):
+        for d in epochs:
+            batch_sizes.append(get_batch_size(dataloader))
+            scheduler.step(**d)
+    else:
+        for _ in range(epochs):
+            batch_sizes.append(get_batch_size(dataloader))
+            scheduler.step()
     return batch_sizes
 
 
