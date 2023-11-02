@@ -701,6 +701,44 @@
   
 
     
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference.md" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    API Documentation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="tutorials.md" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Tutorials
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -2125,9 +2163,7 @@ step() functions belonging to them by just one call</p>
 
             <details class="quote">
               <summary>Source code in <code>bs_scheduler\batch_size_schedulers.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 940</span>
-<span class="normal"> 941</span>
-<span class="normal"> 942</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 942</span>
 <span class="normal"> 943</span>
 <span class="normal"> 944</span>
 <span class="normal"> 945</span>
@@ -2229,7 +2265,9 @@ step() functions belonging to them by just one call</p>
 <span class="normal">1041</span>
 <span class="normal">1042</span>
 <span class="normal">1043</span>
-<span class="normal">1044</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">ChainedBSScheduler</span><span class="p">(</span><span class="n">BSScheduler</span><span class="p">):</span>
+<span class="normal">1044</span>
+<span class="normal">1045</span>
+<span class="normal">1046</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">ChainedBSScheduler</span><span class="p">(</span><span class="n">BSScheduler</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Similar to torch.optim.lr_scheduler.ChainedScheduler.</span>
 <span class="sd">    Chains a list of batch size schedulers. It takes the list of batch size schedulers and performs consucutive</span>
 <span class="sd">    step() functions belonging to them by just one call</span>
@@ -2420,9 +2458,7 @@ batch size. Otherwise, returns False.</p>
 
           <details class="quote">
             <summary>Source code in <code>bs_scheduler\batch_size_schedulers.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1031</span>
-<span class="normal">1032</span>
-<span class="normal">1033</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1033</span>
 <span class="normal">1034</span>
 <span class="normal">1035</span>
 <span class="normal">1036</span>
@@ -2433,7 +2469,9 @@ batch size. Otherwise, returns False.</p>
 <span class="normal">1041</span>
 <span class="normal">1042</span>
 <span class="normal">1043</span>
-<span class="normal">1044</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">load_state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+<span class="normal">1044</span>
+<span class="normal">1045</span>
+<span class="normal">1046</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">load_state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Loads the schedulers state.</span>
 
 <span class="sd">    Args:</span>
@@ -2473,9 +2511,7 @@ states will also be saved.</p>
 
           <details class="quote">
             <summary>Source code in <code>bs_scheduler\batch_size_schedulers.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1017</span>
-<span class="normal">1018</span>
-<span class="normal">1019</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1019</span>
 <span class="normal">1020</span>
 <span class="normal">1021</span>
 <span class="normal">1022</span>
@@ -2485,7 +2521,9 @@ states will also be saved.</p>
 <span class="normal">1026</span>
 <span class="normal">1027</span>
 <span class="normal">1028</span>
-<span class="normal">1029</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="normal">1029</span>
+<span class="normal">1030</span>
+<span class="normal">1031</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Returns the state of the scheduler as a :class:`dict`.</span>
 
 <span class="sd">    It contains an entry for every variable in self.__dict__ which is not the dataloader. The wrapped scheduler</span>
@@ -2551,15 +2589,15 @@ states will also be saved.</p>
 
           <details class="quote">
             <summary>Source code in <code>bs_scheduler\batch_size_schedulers.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 998</span>
-<span class="normal"> 999</span>
-<span class="normal">1000</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1000</span>
 <span class="normal">1001</span>
 <span class="normal">1002</span>
 <span class="normal">1003</span>
 <span class="normal">1004</span>
 <span class="normal">1005</span>
-<span class="normal">1006</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="normal">1006</span>
+<span class="normal">1007</span>
+<span class="normal">1008</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Executes the step() function for all schedulers in order.</span>
 
 <span class="sd">    Args:</span>
@@ -3189,7 +3227,9 @@ is set to <code>len(self.dataloader.dataset)</code>. Default: None.</p>
 <span class="normal">934</span>
 <span class="normal">935</span>
 <span class="normal">936</span>
-<span class="normal">937</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">CosineAnnealingBS</span><span class="p">(</span><span class="n">BSScheduler</span><span class="p">):</span>
+<span class="normal">937</span>
+<span class="normal">938</span>
+<span class="normal">939</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">CosineAnnealingBS</span><span class="p">(</span><span class="n">BSScheduler</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Similar to torch.optim.lr_scheduler.CosineAnnealingLR which implements the cosine annealing part of</span>
 <span class="sd">    `SGDR: Stochastic Gradient Descent with Warm Restarts`_. For batch size, we perform reverse annealing and instead</span>
 <span class="sd">    of decreasing the batch size to min_batch_size we increase it to max_batch_size.</span>
@@ -3239,6 +3279,7 @@ is set to <code>len(self.dataloader.dataset)</code>. Default: None.</p>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">dataloader</span><span class="p">,</span> <span class="n">batch_size_manager</span><span class="p">,</span> <span class="n">max_batch_size</span><span class="p">,</span> <span class="n">min_batch_size</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">base_batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataloader</span><span class="o">.</span><span class="n">_base_batch_size</span> <span class="k">if</span> <span class="n">base_batch_size</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">base_batch_size</span>
         <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_batch_size</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_batch_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_float_batch_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_batch_size</span>
 
     <span class="k">def</span> <span class="nf">get_new_bs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot; Returns the next batch size as an :class:`int`. Increases the batch size from base batch size to maximum</span>
@@ -3258,8 +3299,9 @@ is set to <code>len(self.dataloader.dataset)</code>. Default: None.</p>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">new_bs</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_epoch</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_iters</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span>
                     <span class="mi">1</span> <span class="o">+</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">last_epoch</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_iters</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span>
-                             <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_batch_size</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_batch_size</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_float_batch_size</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_batch_size</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_batch_size</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">_float_batch_size</span> <span class="o">=</span> <span class="n">new_bs</span>
         <span class="k">return</span> <span class="n">clip</span><span class="p">(</span><span class="n">rint</span><span class="p">(</span><span class="n">new_bs</span><span class="p">),</span> <span class="nb">min</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">base_batch_size</span><span class="p">,</span> <span class="nb">max</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_batch_size</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -3297,8 +3339,7 @@ we clip the values to be within bounds.</p>
 
           <details class="quote">
             <summary>Source code in <code>bs_scheduler\batch_size_schedulers.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">917</span>
-<span class="normal">918</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">918</span>
 <span class="normal">919</span>
 <span class="normal">920</span>
 <span class="normal">921</span>
@@ -3317,7 +3358,9 @@ we clip the values to be within bounds.</p>
 <span class="normal">934</span>
 <span class="normal">935</span>
 <span class="normal">936</span>
-<span class="normal">937</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_new_bs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="normal">937</span>
+<span class="normal">938</span>
+<span class="normal">939</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_new_bs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Returns the next batch size as an :class:`int`. Increases the batch size from base batch size to maximum</span>
 <span class="sd">    batch size following a cyclic cosine curve. The implementation is equivalent to</span>
 <span class="sd">    torch.optim.lr_scheduler.CosineAnnealingLR.get_lr() and instead of `eta_min` we use `self.max_batch_size` and</span>
@@ -3335,8 +3378,9 @@ we clip the values to be within bounds.</p>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">new_bs</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_epoch</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_iters</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span>
                 <span class="mi">1</span> <span class="o">+</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">last_epoch</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_iters</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span>
-                         <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_batch_size</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_batch_size</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_float_batch_size</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_batch_size</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_batch_size</span>
 
+    <span class="bp">self</span><span class="o">.</span><span class="n">_float_batch_size</span> <span class="o">=</span> <span class="n">new_bs</span>
     <span class="k">return</span> <span class="n">clip</span><span class="p">(</span><span class="n">rint</span><span class="p">(</span><span class="n">new_bs</span><span class="p">),</span> <span class="nb">min</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">base_batch_size</span><span class="p">,</span> <span class="nb">max</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_batch_size</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
           </details>
@@ -3528,9 +3572,7 @@ is set to <code>len(self.dataloader.dataset)</code>. Default: None.</p>
 
             <details class="quote">
               <summary>Source code in <code>bs_scheduler\batch_size_schedulers.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1356</span>
-<span class="normal">1357</span>
-<span class="normal">1358</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1358</span>
 <span class="normal">1359</span>
 <span class="normal">1360</span>
 <span class="normal">1361</span>
@@ -3600,7 +3642,9 @@ is set to <code>len(self.dataloader.dataset)</code>. Default: None.</p>
 <span class="normal">1425</span>
 <span class="normal">1426</span>
 <span class="normal">1427</span>
-<span class="normal">1428</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">CosineAnnealingBSWithWarmRestarts</span><span class="p">(</span><span class="n">BSScheduler</span><span class="p">):</span>
+<span class="normal">1428</span>
+<span class="normal">1429</span>
+<span class="normal">1430</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">CosineAnnealingBSWithWarmRestarts</span><span class="p">(</span><span class="n">BSScheduler</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Similar to torch.optim.lr_scheduler.CosineAnnealingWarmRestarts which implements `SGDR: Stochastic Gradient</span>
 <span class="sd">    Descent with Warm Restarts`_. Unlike torch.optim.lr_scheduler.CosineAnnealingWarmRestarts, which decreases the</span>
 <span class="sd">    learning rate for :math:`t_{i}` iterations and then restarts, we increase the batch size from base_batch_size to</span>
@@ -3710,9 +3754,7 @@ bound.</p>
 
           <details class="quote">
             <summary>Source code in <code>bs_scheduler\batch_size_schedulers.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1411</span>
-<span class="normal">1412</span>
-<span class="normal">1413</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1413</span>
 <span class="normal">1414</span>
 <span class="normal">1415</span>
 <span class="normal">1416</span>
@@ -3727,7 +3769,9 @@ bound.</p>
 <span class="normal">1425</span>
 <span class="normal">1426</span>
 <span class="normal">1427</span>
-<span class="normal">1428</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_new_bs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="normal">1428</span>
+<span class="normal">1429</span>
+<span class="normal">1430</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_new_bs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Returns the next batch size as an :class:`int`. Increases the batch size from base batch size to maximum</span>
 <span class="sd">    batch and restarts. The implementation is similar to</span>
 <span class="sd">    torch.optim.lr_scheduler.CosineAnnealingWarmRestarts, but instead of `eta_min` we use max_batch_size, and we</span>
@@ -4002,9 +4046,7 @@ dataloader, max_batch_size is set to <code>len(self.dataloader.dataset)</code>. 
 
             <details class="quote">
               <summary>Source code in <code>bs_scheduler\batch_size_schedulers.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1200</span>
-<span class="normal">1201</span>
-<span class="normal">1202</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1202</span>
 <span class="normal">1203</span>
 <span class="normal">1204</span>
 <span class="normal">1205</span>
@@ -4155,7 +4197,9 @@ dataloader, max_batch_size is set to <code>len(self.dataloader.dataset)</code>. 
 <span class="normal">1350</span>
 <span class="normal">1351</span>
 <span class="normal">1352</span>
-<span class="normal">1353</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">CyclicBS</span><span class="p">(</span><span class="n">BSScheduler</span><span class="p">):</span>
+<span class="normal">1353</span>
+<span class="normal">1354</span>
+<span class="normal">1355</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">CyclicBS</span><span class="p">(</span><span class="n">BSScheduler</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Similar to torch.optim.lr_scheduler.CyclicLR. Sets the batch size according to a cyclical batch size policy,</span>
 <span class="sd">    inspired from the cyclical learning rate policy (CLR). The policy cycles the batch size between two boundaries with</span>
 <span class="sd">    a constant frequency, similar to the method detailed in the paper `Cyclical Learning Rates for Training Neural</span>
@@ -4343,9 +4387,7 @@ max_batch_size and back, while being scaled at each iteration.</p>
 
           <details class="quote">
             <summary>Source code in <code>bs_scheduler\batch_size_schedulers.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1311</span>
-<span class="normal">1312</span>
-<span class="normal">1313</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1313</span>
 <span class="normal">1314</span>
 <span class="normal">1315</span>
 <span class="normal">1316</span>
@@ -4364,7 +4406,9 @@ max_batch_size and back, while being scaled at each iteration.</p>
 <span class="normal">1329</span>
 <span class="normal">1330</span>
 <span class="normal">1331</span>
-<span class="normal">1332</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_new_bs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="normal">1332</span>
+<span class="normal">1333</span>
+<span class="normal">1334</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_new_bs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Returns the next batch size as an :class:`int`. The value of the batch size cycles from base_batch_size to</span>
 <span class="sd">    max_batch_size and back, while being scaled at each iteration.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -4440,14 +4484,14 @@ max_batch_size and back, while being scaled at each iteration.</p>
 
           <details class="quote">
             <summary>Source code in <code>bs_scheduler\batch_size_schedulers.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1346</span>
-<span class="normal">1347</span>
-<span class="normal">1348</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1348</span>
 <span class="normal">1349</span>
 <span class="normal">1350</span>
 <span class="normal">1351</span>
 <span class="normal">1352</span>
-<span class="normal">1353</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">load_state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+<span class="normal">1353</span>
+<span class="normal">1354</span>
+<span class="normal">1355</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">load_state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Loads the schedulers state.</span>
 
 <span class="sd">    Args:</span>
@@ -4481,9 +4525,7 @@ states will also be saved.</p>
 
           <details class="quote">
             <summary>Source code in <code>bs_scheduler\batch_size_schedulers.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1334</span>
-<span class="normal">1335</span>
-<span class="normal">1336</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1336</span>
 <span class="normal">1337</span>
 <span class="normal">1338</span>
 <span class="normal">1339</span>
@@ -4491,7 +4533,9 @@ states will also be saved.</p>
 <span class="normal">1341</span>
 <span class="normal">1342</span>
 <span class="normal">1343</span>
-<span class="normal">1344</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="normal">1344</span>
+<span class="normal">1345</span>
+<span class="normal">1346</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Returns the state of the scheduler as a :class:`dict`.</span>
 
 <span class="sd">    It contains an entry for every variable in self.__dict__ which is not the dataloader. The wrapped scheduler</span>
@@ -5023,9 +5067,7 @@ is set to <code>len(self.dataloader.dataset)</code>. Default: None.</p>
 
             <details class="quote">
               <summary>Source code in <code>bs_scheduler\batch_size_schedulers.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1047</span>
-<span class="normal">1048</span>
-<span class="normal">1049</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1049</span>
 <span class="normal">1050</span>
 <span class="normal">1051</span>
 <span class="normal">1052</span>
@@ -5173,7 +5215,9 @@ is set to <code>len(self.dataloader.dataset)</code>. Default: None.</p>
 <span class="normal">1194</span>
 <span class="normal">1195</span>
 <span class="normal">1196</span>
-<span class="normal">1197</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">IncreaseBSOnPlateau</span><span class="p">(</span><span class="n">BSScheduler</span><span class="p">):</span>
+<span class="normal">1197</span>
+<span class="normal">1198</span>
+<span class="normal">1199</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">IncreaseBSOnPlateau</span><span class="p">(</span><span class="n">BSScheduler</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; The inverse of torch.optim.lr_scheduler.ReduceLROnPlateau.</span>
 <span class="sd">    Increases the batch size when a metric has stopped improving. Models often benefit from increasing the batch size</span>
 <span class="sd">    by a factor once the learning stagnates. This scheduler receives a metric value and if no improvement is seen for a</span>
@@ -5411,9 +5455,7 @@ step() function, otherwise a TypeError would be raised.</p>
 
           <details class="quote">
             <summary>Source code in <code>bs_scheduler\batch_size_schedulers.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1156</span>
-<span class="normal">1157</span>
-<span class="normal">1158</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1158</span>
 <span class="normal">1159</span>
 <span class="normal">1160</span>
 <span class="normal">1161</span>
@@ -5443,7 +5485,9 @@ step() function, otherwise a TypeError would be raised.</p>
 <span class="normal">1185</span>
 <span class="normal">1186</span>
 <span class="normal">1187</span>
-<span class="normal">1188</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_new_bs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="normal">1188</span>
+<span class="normal">1189</span>
+<span class="normal">1190</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_new_bs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Returns the next batch size as an :class:`int`. Receives a metric and increases the batch size by a give</span>
 <span class="sd">    factor if the metric has not been improved for `patience` epochs. After increasing the batch size, the</span>
 <span class="sd">    scheduler goes through a cooldown period in which bad epochs are ignored.</span>
@@ -5530,14 +5574,14 @@ step() function, otherwise a TypeError would be raised.</p>
 
           <details class="quote">
             <summary>Source code in <code>bs_scheduler\batch_size_schedulers.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1190</span>
-<span class="normal">1191</span>
-<span class="normal">1192</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1192</span>
 <span class="normal">1193</span>
 <span class="normal">1194</span>
 <span class="normal">1195</span>
 <span class="normal">1196</span>
-<span class="normal">1197</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">load_state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+<span class="normal">1197</span>
+<span class="normal">1198</span>
+<span class="normal">1199</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">load_state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Loads the schedulers state.</span>
 
 <span class="sd">    Args:</span>
@@ -7339,9 +7383,7 @@ is set to <code>len(self.dataloader.dataset)</code>. Default: None.</p>
 
             <details class="quote">
               <summary>Source code in <code>bs_scheduler\batch_size_schedulers.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1431</span>
-<span class="normal">1432</span>
-<span class="normal">1433</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1433</span>
 <span class="normal">1434</span>
 <span class="normal">1435</span>
 <span class="normal">1436</span>
@@ -7440,7 +7482,9 @@ is set to <code>len(self.dataloader.dataset)</code>. Default: None.</p>
 <span class="normal">1529</span>
 <span class="normal">1530</span>
 <span class="normal">1531</span>
-<span class="normal">1532</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">OneCycleBS</span><span class="p">(</span><span class="n">BSScheduler</span><span class="p">):</span>
+<span class="normal">1532</span>
+<span class="normal">1533</span>
+<span class="normal">1534</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">OneCycleBS</span><span class="p">(</span><span class="n">BSScheduler</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Similar to torch.optim.lr_scheduler.OneCycleLR. Sets the batch size according to the one cycle batch size</span>
 <span class="sd">    policy, inspired from the 1cycle learning rate policy. The one cycle batch size policy decreases the batch size</span>
 <span class="sd">    from the base_batch_size to some minimum batch size and that it increases it to some maximum batch size. bigger</span>
@@ -7579,9 +7623,7 @@ bound.</p>
 
           <details class="quote">
             <summary>Source code in <code>bs_scheduler\batch_size_schedulers.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1510</span>
-<span class="normal">1511</span>
-<span class="normal">1512</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1512</span>
 <span class="normal">1513</span>
 <span class="normal">1514</span>
 <span class="normal">1515</span>
@@ -7601,7 +7643,9 @@ bound.</p>
 <span class="normal">1529</span>
 <span class="normal">1530</span>
 <span class="normal">1531</span>
-<span class="normal">1532</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_new_bs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="normal">1532</span>
+<span class="normal">1533</span>
+<span class="normal">1534</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_new_bs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Returns the next batch size as an :class:`int`. Increases the batch size from base batch size to maximum</span>
 <span class="sd">    batch and restarts. The implementation is similar to</span>
 <span class="sd">    torch.optim.lr_scheduler.CosineAnnealingWarmRestarts, but instead of `eta_min` we use max_batch_size, and we</span>
