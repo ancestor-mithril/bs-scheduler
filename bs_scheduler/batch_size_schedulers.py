@@ -1202,8 +1202,9 @@ class IncreaseBSOnPlateau(BSScheduler):
 class CyclicBS(BSScheduler):
     """ Similar to torch.optim.lr_scheduler.CyclicLR. Sets the batch size according to a cyclical batch size policy,
     inspired from the cyclical learning rate policy (CLR). The policy cycles the batch size between two boundaries with
-    a constant frequency, similar to the method detailed in the paper `Cyclical Learning Rates for Training Neural
-    Networks`_. The distance between the two boundaries can be scaled on a per-iteration or per-cycle basis.
+    a constant frequency, similar to a reversed cycle from the method detailed in the paper `Cyclical Learning Rates
+    for Training Neural Networks`_. The distance between the two boundaries can be scaled on a per-iteration or
+    per-cycle basis.
 
     Cyclical batch size policy changes the batch size after every batch. The step() function should be called after a
     batch has been used for training.
@@ -1221,8 +1222,8 @@ class CyclicBS(BSScheduler):
         dataloader (DataLoader): Wrapped dataloader.
         base_batch_size (Union[int, None]): Initial batch size which is the lower boundery in the cycle. If None, the
             base batch size will be retrieved from the dataloader. Default: None.
-        step_size_down (int): Number of training iterations in the increasing half of a cycle. Default: 2000.
-        step_size_up (Union[int, None]): Number of training iterations in the decreasing half of a cycle. If
+        step_size_down (int): Number of training iterations in the decreasing half of a cycle. Default: 2000.
+        step_size_up (Union[int, None]): Number of training iterations in the increasing half of a cycle. If
             step_size_down is None, it is set to step_size_down. Default: None.
         mode (str): One of `triangular`, `triangular2`, `exp_range`. Values correspond to the policies detailed above.
             If scale_fn is not None, this argument is ignored. Default: 'triangular'.
