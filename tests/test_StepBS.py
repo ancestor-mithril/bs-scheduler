@@ -62,6 +62,38 @@ class TestStepBS(BSTest):
         scheduler.step()
         self.assertEqual(scheduler.step_size, step_size)
 
+    def test_graphic(self):
+        import matplotlib.pyplot as plt
+        import torch
+        import warnings
+        warnings.filterwarnings("ignore", category=UserWarning)
+
+        dataloader = create_dataloader(self.dataset, batch_size=self.base_batch_size)
+        step_size = 50
+        gamma = 1.1
+        scheduler = StepBS(dataloader, step_size=step_size, gamma=gamma)
+        n_epochs = 300
+
+        batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
+        plt.plot(batch_sizes)
+        plt.savefig("StepBS.png")
+        plt.close()
+
+        model = torch.nn.Linear(10, 10)
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=0.9)
+        learning_rates = []
+
+        def get_lr(optimizer):
+            for param_group in optimizer.param_groups:
+                return param_group['lr']
+
+        for _ in range(n_epochs):
+            learning_rates.append(get_lr(optimizer))
+            scheduler.step()
+        plt.plot(learning_rates)
+        plt.savefig("StepLR.png")
+        plt.close()
 
 
 if __name__ == "__main__":

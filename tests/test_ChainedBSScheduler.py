@@ -52,6 +52,43 @@ class TestChainedBSScheduler(BSTest):
         scheduler.step()
         self.assertEqual(scheduler.schedulers[0].factor, factor)
 
+    def test_graphic(self):
+        import matplotlib.pyplot as plt
+        import torch
+        import warnings
+        warnings.filterwarnings("ignore", category=UserWarning)
+
+        base_batch_size = 10
+        dataloader = create_dataloader(self.dataset, batch_size=base_batch_size)
+        scheduler1 = ConstantBS(dataloader, factor=10, milestone=4)
+        scheduler2 = ExponentialBS(dataloader, gamma=1.1)
+        scheduler = ChainedBSScheduler([scheduler1, scheduler2])
+        n_epochs = 10
+
+        batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
+        plt.plot(batch_sizes)
+        plt.savefig("ChainedBSScheduler.png")
+        plt.close()
+
+        model = torch.nn.Linear(10, 10)
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+        scheduler1 = torch.optim.lr_scheduler.ConstantLR(optimizer, factor=0.1, total_iters=4)
+        scheduler2 = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=1.0 / 1.1)
+        scheduler = torch.optim.lr_scheduler.ChainedScheduler([scheduler1, scheduler2])
+        learning_rates = []
+
+        def get_lr(optimizer):
+            for param_group in optimizer.param_groups:
+                return param_group['lr']
+
+        n_epochs = 10
+        for _ in range(n_epochs):
+            learning_rates.append(get_lr(optimizer))
+            scheduler.step()
+        plt.plot(learning_rates)
+        plt.savefig("ChainedScheduler.png")
+        plt.close()
+
 
 if __name__ == "__main__":
     from multiprocessing import freeze_support

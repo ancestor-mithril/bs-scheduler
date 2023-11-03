@@ -49,6 +49,39 @@ class TestConstantBS(BSTest):
         scheduler.step()
         self.assertTrue(scheduler.verbose)
 
+    def test_graphic(self):
+        import matplotlib.pyplot as plt
+        import torch
+        import warnings
+        warnings.filterwarnings("ignore", category=UserWarning)
+
+        dataloader = create_dataloader(self.dataset, batch_size=self.base_batch_size)
+        factor = 5.0
+        milestone = 5
+        scheduler = ConstantBS(dataloader, factor=factor, milestone=milestone, max_batch_size=100, verbose=False)
+        n_epochs = 15
+
+        batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
+        plt.plot(batch_sizes)
+        plt.savefig("ConstantBS.png")
+        plt.close()
+
+        model = torch.nn.Linear(10, 10)
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+        scheduler = torch.optim.lr_scheduler.ConstantLR(optimizer, factor=0.1, total_iters=4)
+        learning_rates = []
+
+        def get_lr(optimizer):
+            for param_group in optimizer.param_groups:
+                return param_group['lr']
+
+        for _ in range(n_epochs):
+            learning_rates.append(get_lr(optimizer))
+            scheduler.step()
+        plt.plot(learning_rates)
+        plt.savefig("ConstantLR.png")
+        plt.close()
+
 
 if __name__ == "__main__":
     from multiprocessing import freeze_support

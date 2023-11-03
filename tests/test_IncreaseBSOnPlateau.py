@@ -2,7 +2,7 @@ import unittest
 
 from bs_scheduler import IncreaseBSOnPlateau
 from tests.test_utils import create_dataloader, simulate_n_epochs, fashion_mnist, \
-    BSTest
+    BSTest, get_batch_sizes_across_epochs
 
 
 class TestIncreaseBSOnPlateau(BSTest):
@@ -60,6 +60,43 @@ class TestIncreaseBSOnPlateau(BSTest):
         scheduler.step(metric=10)
         self.assertEqual(scheduler.mode, mode)
         self.assertEqual(scheduler.threshold_mode, threshold_mode)
+
+    def test_graphic(self):
+        import matplotlib.pyplot as plt
+        import torch
+        import warnings
+        warnings.filterwarnings("ignore", category=UserWarning)
+
+        base_batch_size = 10
+        max_batch_size = 100
+
+        n_epochs = 100
+        metrics = [{"metric": 0.1}] * n_epochs
+
+        dataloader = create_dataloader(self.dataset, batch_size=base_batch_size)
+        scheduler = IncreaseBSOnPlateau(dataloader, mode='min', threshold_mode='rel', max_batch_size=max_batch_size)
+        batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, metrics)
+        plt.plot(batch_sizes)
+        plt.savefig("IncreaseBSOnPlateau.png")
+        plt.close()
+
+        model = torch.nn.Linear(10, 10)
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', threshold_mode='rel',
+                                                               min_lr=0.001, factor=0.5)
+        learning_rates = []
+
+        def get_lr(optimizer):
+            for param_group in optimizer.param_groups:
+                return param_group['lr']
+
+        metrics = [{"metrics": 0.1}] * n_epochs
+        for d in metrics:
+            learning_rates.append(get_lr(optimizer))
+            scheduler.step(**d)
+        plt.plot(learning_rates)
+        plt.savefig("ReduceLROnPlateau.png")
+        plt.close()
 
 
 if __name__ == "__main__":

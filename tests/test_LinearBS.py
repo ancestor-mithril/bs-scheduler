@@ -77,6 +77,43 @@ class TestLinearBS(BSTest):
         scheduler.step()
         self.assertEqual(scheduler.milestone, milestone)
 
+    def test_graphic(self):
+        import matplotlib.pyplot as plt
+        import torch
+        import warnings
+        warnings.filterwarnings("ignore", category=UserWarning)
+
+        base_batch_size = 10
+        dataloader = create_dataloader(self.dataset, batch_size=base_batch_size)
+        start_factor = 6.0
+        end_factor = 1.0
+        milestone = 5
+        scheduler = LinearBS(dataloader, start_factor=start_factor, end_factor=end_factor, milestone=milestone,
+                             max_batch_size=100, verbose=False)
+        n_epochs = 15
+
+        batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
+        plt.plot(batch_sizes)
+        plt.savefig("LinearBS.png")
+        plt.close()
+
+        model = torch.nn.Linear(10, 10)
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+        scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=1.0 / start_factor, end_factor=end_factor,
+                                                      total_iters=milestone)
+        learning_rates = []
+
+        def get_lr(optimizer):
+            for param_group in optimizer.param_groups:
+                return param_group['lr']
+
+        for _ in range(n_epochs):
+            learning_rates.append(get_lr(optimizer))
+            scheduler.step()
+        plt.plot(learning_rates)
+        plt.savefig("LinearLR.png")
+        plt.close()
+
 
 if __name__ == "__main__":
     from multiprocessing import freeze_support

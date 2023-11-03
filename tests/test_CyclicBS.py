@@ -14,93 +14,92 @@ class TestConstantBS(BSTest):
         #  without drop last and so on.
 
     def test_dataloader_batch_size_triangular(self):
-        base_batch_size = 10
+        base_batch_size = 100
         dataloader = create_dataloader(self.dataset, batch_size=base_batch_size)
-        max_batch_size = 100
-        step_size_up = 10
+        max_batch_size = 200
+        min_batch_size = 10
+        step_size_down = 10
         scheduler = CyclicBS(dataloader, base_batch_size=base_batch_size, max_batch_size=max_batch_size,
-                             step_size_up=step_size_up, mode='triangular')
-        n_epochs = 4 * step_size_up
+                             step_size_down=step_size_down, mode='triangular', min_batch_size=min_batch_size)
+        n_epochs = 4 * step_size_down
 
         batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
 
-        step = rint((max_batch_size - base_batch_size) / step_size_up)
-        increasing_range = list(range(base_batch_size, max_batch_size, step))
-        decreasing_range = list(range(max_batch_size, base_batch_size, -step))
-        expected_batch_sizes = (increasing_range + decreasing_range) * 2
+        step = rint((base_batch_size - min_batch_size) / step_size_down)
+        decreasing_range = list(range(base_batch_size, min_batch_size, -step))
+        increasing_range = list(range(min_batch_size, base_batch_size, step))
+        expected_batch_sizes = (decreasing_range + increasing_range) * 2
 
         self.assertEqual(batch_sizes, expected_batch_sizes)
 
     def test_dataloader_batch_size_triangular2(self):
-        base_batch_size = 10
+        # This test is not reliable, it has rounding errors that need to be handled by hand
+        base_batch_size = 100
         dataloader = create_dataloader(self.dataset, batch_size=base_batch_size)
-        max_batch_size = 100
-        step_size_up = 10
+        max_batch_size = 200
+        min_batch_size = 10
+        step_size_down = 10
         scheduler = CyclicBS(dataloader, base_batch_size=base_batch_size, max_batch_size=max_batch_size,
-                             step_size_up=step_size_up, mode='triangular2')
-        n_epochs = 4 * step_size_up
+                             step_size_down=step_size_down, mode='triangular2', min_batch_size=min_batch_size)
+        n_epochs = 4 * step_size_down
 
         batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
 
-        step = rint((max_batch_size - base_batch_size) / step_size_up)
-        increasing_range = list(range(base_batch_size, max_batch_size, step))
-        decreasing_range = list(range(max_batch_size, base_batch_size, -step))
-        increasing_range_2 = [base_batch_size]
-        for _ in range(step_size_up - 1):
-            increasing_range_2.append(increasing_range_2[-1] + step / 2.0)
-
-        increasing_range_2[3] -= 1e-8  # Rounding errors ...
-        increasing_range_2[9] += 1e-8  # Rounding errors ...
-        # I don't know if this generalizes for other pairs of base batch size and upper batch size.
-        # TODO: Find a solution for better numerical stability.
-
-        decreasing_range_2 = [increasing_range_2[-1] + step / 2.0] + list(reversed(increasing_range_2))[
-                                                                     :step_size_up - 1]
-        increasing_range_2 = list(map(rint, increasing_range_2))
+        step = rint((base_batch_size - min_batch_size) / step_size_down)
+        decreasing_range = list(range(base_batch_size, min_batch_size, -step))
+        increasing_range = list(range(min_batch_size, base_batch_size, step))
+        decreasing_range_2 = [base_batch_size]
+        for _ in range(step_size_down - 1):
+            decreasing_range_2.append(decreasing_range_2[-1] - step / 2.0)
+        decreasing_range_2[-1] -= 1e-8  # Rounding error
+        increasing_range_2 = [decreasing_range_2[-1] - step / 2.0] + list(reversed(decreasing_range_2))[:-1]
         decreasing_range_2 = list(map(rint, decreasing_range_2))
-        expected_batch_sizes = increasing_range + decreasing_range + increasing_range_2 + decreasing_range_2
+        increasing_range_2 = list(map(rint, increasing_range_2))
+        expected_batch_sizes = decreasing_range + increasing_range + decreasing_range_2 + increasing_range_2
 
         self.assertEqual(batch_sizes, expected_batch_sizes)
 
     def test_dataloader_batch_size_exp_range(self):
-        base_batch_size = 10
+        base_batch_size = 100
         dataloader = create_dataloader(self.dataset, batch_size=base_batch_size)
-        max_batch_size = 100
-        step_size_up = 10
+        max_batch_size = 200
+        min_batch_size = 10
+        step_size_down = 10
         gamma = 0.9
         scheduler = CyclicBS(dataloader, base_batch_size=base_batch_size, max_batch_size=max_batch_size,
-                             step_size_up=step_size_up, mode='exp_range', gamma=gamma)
-        n_epochs = 4 * step_size_up
+                             step_size_down=step_size_down, mode='exp_range', gamma=gamma,
+                             min_batch_size=min_batch_size)
+        n_epochs = 4 * step_size_down
 
         batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
 
-        def calculate_increasing_and_decreasing_range(base_batch_size, step_size_up, step, count):
-            increasing_range = [base_batch_size]
+        def calculate_increasing_and_decreasing_range(base_batch_size, step_size_down, step, count):
+            decreasing_range = [base_batch_size]
             count += 1
-            for i in range(1, step_size_up):
-                increasing_range.append(base_batch_size + step * i * gamma ** count)
+            for i in range(1, step_size_down):
+                decreasing_range.append(base_batch_size - step * i * gamma ** count)
                 count += 1
-            decreasing_range = [base_batch_size + step * step_size_up * gamma ** count]
+            increasing_range = [base_batch_size - step * step_size_down * gamma ** count]
             count += 1
-            for i in range(step_size_up - 1, 0, -1):
-                decreasing_range.append(base_batch_size + step * i * gamma ** count)
+            for i in range(step_size_down - 1, 0, -1):
+                increasing_range.append(base_batch_size - step * i * gamma ** count)
                 count += 1
 
-            return increasing_range, decreasing_range, count
+            return decreasing_range, increasing_range, count
 
-        step = rint((max_batch_size - base_batch_size) / step_size_up)
+        step = rint((base_batch_size - min_batch_size) / step_size_down)
         count = 0
 
-        increasing_range, decreasing_range, count = calculate_increasing_and_decreasing_range(
-            base_batch_size, step_size_up, step, count)
-        increasing_range_2, decreasing_range_2, count = calculate_increasing_and_decreasing_range(
-            base_batch_size, step_size_up, step, count)
+        decreasing_range, increasing_range, count = calculate_increasing_and_decreasing_range(
+            base_batch_size, step_size_down, step, count)
+        decreasing_range_2, increasing_range_2, count = calculate_increasing_and_decreasing_range(
+            base_batch_size, step_size_down, step, count)
 
-        increasing_range = list(map(rint, increasing_range))
         decreasing_range = list(map(rint, decreasing_range))
-        increasing_range_2 = list(map(rint, increasing_range_2))
+        increasing_range = list(map(rint, increasing_range))
         decreasing_range_2 = list(map(rint, decreasing_range_2))
-        expected_batch_sizes = increasing_range + decreasing_range + increasing_range_2 + decreasing_range_2
+        increasing_range_2 = list(map(rint, increasing_range_2))
+        expected_batch_sizes = decreasing_range + increasing_range + decreasing_range_2 + increasing_range_2
 
         self.assertEqual(batch_sizes, expected_batch_sizes)
 
@@ -144,6 +143,80 @@ class TestConstantBS(BSTest):
         self.torch_save_and_load(scheduler)
         scheduler.step()
         self.assertEqual(scheduler.scale_fn(rint(random.random() * 1000)), 0.25)
+
+    def test_graphic_triangular2(self):
+        import matplotlib.pyplot as plt
+        import torch
+        import warnings
+        warnings.filterwarnings("ignore", category=UserWarning)
+
+        base_batch_size = 100
+        dataloader = create_dataloader(self.dataset, batch_size=base_batch_size)
+        max_batch_size = 200
+        step_size_down = 10
+        gamma = 0.9
+        scheduler = CyclicBS(dataloader, base_batch_size=base_batch_size, max_batch_size=max_batch_size,
+                             step_size_down=step_size_down, mode='triangular2', gamma=gamma)
+        n_epochs = 4 * step_size_down
+
+        batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
+        plt.plot(batch_sizes)
+        plt.savefig("CyclicBS-triangular2.png")
+        plt.close()
+
+        model = torch.nn.Linear(10, 10)
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+        scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.001, max_lr=0.01, mode='triangular2',
+                                                      gamma=gamma, step_size_down=step_size_down)
+        learning_rates = []
+
+        def get_lr(optimizer):
+            for param_group in optimizer.param_groups:
+                return param_group['lr']
+
+        for _ in range(n_epochs):
+            learning_rates.append(get_lr(optimizer))
+            scheduler.step()
+        plt.plot(learning_rates)
+        plt.savefig("CyclicLR-triangular2.png")
+        plt.close()
+
+    def test_graphic_exp_range(self):
+        import matplotlib.pyplot as plt
+        import torch
+        import warnings
+        warnings.filterwarnings("ignore", category=UserWarning)
+
+        base_batch_size = 100
+        dataloader = create_dataloader(self.dataset, batch_size=base_batch_size)
+        max_batch_size = 200
+        step_size_down = 50
+        gamma = 0.9
+        scheduler = CyclicBS(dataloader, base_batch_size=base_batch_size, max_batch_size=max_batch_size,
+                             step_size_down=step_size_down, mode='exp_range', gamma=gamma)
+        n_epochs = 10 * step_size_down
+
+        batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
+        plt.plot(batch_sizes)
+        plt.savefig("CyclicBS-exp_range.png")
+        plt.close()
+
+        model = torch.nn.Linear(10, 10)
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+        scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.001, max_lr=0.01, mode='exp_range',
+                                                      gamma=gamma, step_size_down=step_size_down)
+        learning_rates = []
+
+        def get_lr(optimizer):
+            for param_group in optimizer.param_groups:
+                return param_group['lr']
+
+        for _ in range(n_epochs):
+            learning_rates.append(get_lr(optimizer))
+            scheduler.step()
+        plt.plot(learning_rates)
+        plt.savefig("CyclicLR-exp_range.png")
+        plt.close()
 
 
 if __name__ == "__main__":

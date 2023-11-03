@@ -1202,8 +1202,9 @@ class IncreaseBSOnPlateau(BSScheduler):
 class CyclicBS(BSScheduler):
     """ Similar to torch.optim.lr_scheduler.CyclicLR. Sets the batch size according to a cyclical batch size policy,
     inspired from the cyclical learning rate policy (CLR). The policy cycles the batch size between two boundaries with
-    a constant frequency, similar to the method detailed in the paper `Cyclical Learning Rates for Training Neural
-    Networks`_. The distance between the two boundaries can be scaled on a per-iteration or per-cycle basis.
+    a constant frequency, similar to a reversed cycle from the method detailed in the paper `Cyclical Learning Rates
+    for Training Neural Networks`_. The distance between the two boundaries can be scaled on a per-iteration or
+    per-cycle basis.
 
     Cyclical batch size policy changes the batch size after every batch. The step() function should be called after a
     batch has been used for training.
@@ -1221,9 +1222,9 @@ class CyclicBS(BSScheduler):
         dataloader (DataLoader): Wrapped dataloader.
         base_batch_size (Union[int, None]): Initial batch size which is the lower boundery in the cycle. If None, the
             base batch size will be retrieved from the dataloader. Default: None.
-        step_size_up (int): Number of training iterations in the increasing half of a cycle. Default: 2000.
-        step_size_down (Union[int, None]): Number of training iterations in the decreasing half of a cycle. If
-            step_size_down is None, it is set to step_size_up. Default: None.
+        step_size_down (int): Number of training iterations in the decreasing half of a cycle. Default: 2000.
+        step_size_up (Union[int, None]): Number of training iterations in the increasing half of a cycle. If
+            step_size_down is None, it is set to step_size_down. Default: None.
         mode (str): One of `triangular`, `triangular2`, `exp_range`. Values correspond to the policies detailed above.
             If scale_fn is not None, this argument is ignored. Default: 'triangular'.
         gamma (float): Constant in the 'exp_range' scaling function: gamma ** (cycle iterations). Default: 1.0.
@@ -1256,13 +1257,13 @@ class CyclicBS(BSScheduler):
     """
 
     def __init__(self, dataloader: DataLoader, base_batch_size: Union[int, None] = None,
-                 step_size_up: int = 2000, step_size_down: Union[int, None] = None, mode: str = 'triangular',
+                 step_size_down: int = 2000, step_size_up: Union[int, None] = None, mode: str = 'triangular',
                  gamma: float = 1.0, scale_fn: Union[Callable[[int], float], None] = None, scale_mode: str = 'cycle',
                  batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
                  min_batch_size: int = 1, verbose: bool = False):
         assert base_batch_size is None or (isinstance(base_batch_size, int) and base_batch_size >= min_batch_size)
-        assert isinstance(step_size_up, int) and step_size_up > 0
-        assert step_size_down is None or (isinstance(step_size_down, int) and step_size_down > 0)
+        assert isinstance(step_size_down, int) and step_size_down > 0
+        assert step_size_up is None or (isinstance(step_size_up, int) and step_size_up > 0)
         assert isinstance(gamma, float) and gamma > 0.0
         assert scale_fn is None or callable(scale_fn)
         assert scale_mode in ('cycle', 'iterations')
@@ -1271,10 +1272,10 @@ class CyclicBS(BSScheduler):
             raise ValueError("CyclicBS requires either a valid mode or passing a custom scale_fn.")
         self.mode: str = mode
 
-        if step_size_down is None:
-            step_size_down = step_size_up
-        self.total_size: float = float(step_size_up + step_size_down)
-        self.step_ratio: float = step_size_up / self.total_size
+        if step_size_up is None:
+            step_size_up = step_size_down
+        self.total_size: float = float(step_size_down + step_size_up)
+        self.step_ratio: float = step_size_down / self.total_size
         self.gamma: float = gamma
 
         self._scale_fn_custom: Union[Callable[[int], float], None] = scale_fn
@@ -1283,7 +1284,7 @@ class CyclicBS(BSScheduler):
 
         super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
         self.base_batch_size: int = self.dataloader._base_batch_size if base_batch_size is None else base_batch_size
-        assert self.max_batch_size > self.base_batch_size
+        assert self.min_batch_size < self.base_batch_size
 
     def _init_scale_fn(self):
         if self._scale_fn_custom is not None:
@@ -1325,13 +1326,13 @@ class CyclicBS(BSScheduler):
         else:
             scale_factor = (x - 1) / (self.step_ratio - 1)
 
-        base_height = (self.max_batch_size - self.base_batch_size) * scale_factor
+        base_height = (self.base_batch_size - self.min_batch_size) * scale_factor
         if self.scale_mode == 'cycle':
             base_height *= self.scale_fn(cycle)
         else:
             base_height *= self.scale_fn(self.last_epoch)
 
-        return rint(self.base_batch_size + base_height)
+        return rint(self.base_batch_size - base_height)
 
     def state_dict(self) -> dict:
         """ Returns the state of the scheduler as a :class:`dict`.

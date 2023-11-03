@@ -50,6 +50,42 @@ class TestCosineAnnealingBS(BSTest):
         scheduler.step()
         self.assertEqual(scheduler.t_0, t_0)
 
+    def test_graphic(self):
+        import matplotlib.pyplot as plt
+        import torch
+        import warnings
+        warnings.filterwarnings("ignore", category=UserWarning)
+
+        base_batch_size = 10
+        t_0 = 5
+        n_epochs = 60
+        max_batch_size = 100
+        dataloader = create_dataloader(self.dataset, batch_size=base_batch_size)
+        scheduler = CosineAnnealingBSWithWarmRestarts(dataloader, t_0=t_0, factor=t_0 // 2,
+                                                      max_batch_size=max_batch_size)
+
+        batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
+        plt.plot(batch_sizes)
+        plt.savefig("CosineAnnealingBSWithWarmRestarts.png")
+        plt.close()
+
+        model = torch.nn.Linear(10, 10)
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=t_0, T_mult=t_0 // 2,
+                                                                         eta_min=0.001)
+        learning_rates = []
+
+        def get_lr(optimizer):
+            for param_group in optimizer.param_groups:
+                return param_group['lr']
+
+        for _ in range(n_epochs):
+            learning_rates.append(get_lr(optimizer))
+            scheduler.step()
+        plt.plot(learning_rates)
+        plt.savefig("CosineAnnealingWarmRestarts.png")
+        plt.close()
+
 
 if __name__ == "__main__":
     from multiprocessing import freeze_support

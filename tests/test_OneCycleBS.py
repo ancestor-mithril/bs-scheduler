@@ -5,7 +5,7 @@ from tests.test_utils import create_dataloader, fashion_mnist, \
     get_batch_sizes_across_epochs, BSTest, rint
 
 
-class TestCosineAnnealingBS(BSTest):
+class TestOneCycleBS(BSTest):
     def setUp(self):
         self.base_batch_size = 64
         self.dataset = fashion_mnist()
@@ -73,6 +73,46 @@ class TestCosineAnnealingBS(BSTest):
         self.torch_save_and_load(scheduler)
         scheduler.step()
         self.assertEqual(scheduler.end_step_1, rint(decay_percentage * total_steps))
+
+    def test_graphic(self):
+        import matplotlib.pyplot as plt
+        import torch
+        import warnings
+        warnings.filterwarnings("ignore", category=UserWarning)
+
+        base_batch_size = 40
+        n_epochs = 120
+        max_batch_size = 80
+        min_batch_size = 10
+        total_steps = 120
+        decay_percentage = 0.3
+        strategy = 'cos'
+
+        dataloader = create_dataloader(self.dataset, batch_size=base_batch_size)
+        scheduler = OneCycleBS(dataloader, total_steps=total_steps, decay_percentage=decay_percentage,
+                               strategy=strategy, max_batch_size=max_batch_size, min_batch_size=min_batch_size)
+        # TODO: not equivalent, OneCycleBS can step more than total_steps
+        batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
+        plt.plot(batch_sizes)
+        plt.savefig("OneCycleBS.png")
+        plt.close()
+
+        model = torch.nn.Linear(10, 10)
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+        scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, total_steps=total_steps, max_lr=0.05,
+                                                        final_div_factor=8.0, div_factor=4.0)
+        learning_rates = []
+
+        def get_lr(optimizer):
+            for param_group in optimizer.param_groups:
+                return param_group['lr']
+
+        for _ in range(n_epochs):
+            learning_rates.append(get_lr(optimizer))
+            scheduler.step()
+        plt.plot(learning_rates)
+        plt.savefig("OneCycleLR.png")
+        plt.close()
 
 
 if __name__ == "__main__":

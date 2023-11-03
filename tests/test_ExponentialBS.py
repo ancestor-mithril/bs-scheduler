@@ -44,6 +44,38 @@ class TestExponentialBS(BSTest):
         scheduler.step()
         self.assertEqual(scheduler.gamma, gamma)
 
+    def test_graphic(self):
+        import matplotlib.pyplot as plt
+        import torch
+        import warnings
+        warnings.filterwarnings("ignore", category=UserWarning)
+
+        base_batch_size = 10
+        dataloader = create_dataloader(self.dataset, batch_size=base_batch_size)
+        scheduler = ExponentialBS(dataloader, gamma=2, max_batch_size=100, verbose=False)
+        n_epochs = 10
+
+        batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
+        plt.plot(batch_sizes)
+        plt.savefig("ExponentialBS.png")
+        plt.close()
+
+        model = torch.nn.Linear(10, 10)
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.5)
+        learning_rates = []
+
+        def get_lr(optimizer):
+            for param_group in optimizer.param_groups:
+                return param_group['lr']
+
+        for _ in range(n_epochs):
+            learning_rates.append(get_lr(optimizer))
+            scheduler.step()
+        plt.plot(learning_rates)
+        plt.savefig("ExponentialLR.png")
+        plt.close()
+
 
 if __name__ == "__main__":
     from multiprocessing import freeze_support
