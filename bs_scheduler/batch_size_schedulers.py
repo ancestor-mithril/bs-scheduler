@@ -1315,8 +1315,8 @@ class CyclicBS(BSScheduler):
         """ Returns the next batch size as an :class:`int`. The value of the batch size cycles from base_batch_size to
         max_batch_size and back, while being scaled at each iteration.
         """
-        if self.last_epoch == 0:  # Don't do anything at initialization.
-            return self.batch_size
+        if self.last_epoch == 0:  # Return base batch size at initialization.
+            return self.base_batch_size
 
         ratio = self.last_epoch / self.total_size
         cycle = math.floor(1 + ratio)
