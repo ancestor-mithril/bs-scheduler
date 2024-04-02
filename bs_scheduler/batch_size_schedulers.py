@@ -1282,6 +1282,7 @@ class CyclicBS(BSScheduler):
         self.scale_mode: str = scale_mode
         self._init_scale_fn()
 
+        self.base_batch_size: Union[int, None] = base_batch_size
         super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
         self.base_batch_size: int = self.dataloader._base_batch_size if base_batch_size is None else base_batch_size
         assert self.min_batch_size < self.base_batch_size
@@ -1315,8 +1316,8 @@ class CyclicBS(BSScheduler):
         """ Returns the next batch size as an :class:`int`. The value of the batch size cycles from base_batch_size to
         max_batch_size and back, while being scaled at each iteration.
         """
-        if self.last_epoch == 0:  # Don't do anything at initialization.
-            return self.batch_size
+        if self.last_epoch == 0:  # Return base batch size or current batch size at initialization.
+            return self.base_batch_size if self.base_batch_size is not None else self.batch_size
 
         ratio = self.last_epoch / self.total_size
         cycle = math.floor(1 + ratio)

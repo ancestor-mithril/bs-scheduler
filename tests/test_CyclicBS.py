@@ -167,7 +167,7 @@ class TestConstantBS(BSTest):
         model = torch.nn.Linear(10, 10)
         optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
         scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.001, max_lr=0.01, mode='triangular2',
-                                                      gamma=gamma, step_size_down=step_size_down)
+                                                      gamma=gamma, step_size_up=step_size_down)
         learning_rates = []
 
         def get_lr(optimizer):
