@@ -1090,16 +1090,16 @@ class IncreaseBSOnPlateau(BSScheduler):
                  batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
                  min_batch_size: int = 1, verbose: bool = False):
         super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
-        assert isinstance(factor, float) and factor != 1.0 and factor >= 0.0
+        assert isinstance(factor, (int, float)) and factor != 1.0 and factor >= 0.0
         # Factor is expected to be greater than 1, but we do not forbid batch size decay.
         assert isinstance(patience, int) and patience >= 0
-        assert isinstance(threshold, float) and threshold > 0.0
+        assert isinstance(threshold, (int, float)) and threshold > 0.0
         assert isinstance(cooldown, int) and cooldown >= 0
 
         self.mode: str = mode
-        self.factor: float = factor
+        self.factor: float = float(factor)
         self.patience: int = patience
-        self.threshold: float = threshold
+        self.threshold: float = float(threshold)
         self.threshold_mode: str = threshold_mode
         self.cooldown: int = cooldown
         self.cooldown_counter: int = 0
@@ -1264,7 +1264,7 @@ class CyclicBS(BSScheduler):
         assert base_batch_size is None or (isinstance(base_batch_size, int) and base_batch_size >= min_batch_size)
         assert isinstance(step_size_down, int) and step_size_down > 0
         assert step_size_up is None or (isinstance(step_size_up, int) and step_size_up > 0)
-        assert isinstance(gamma, float) and gamma > 0.0
+        assert isinstance(gamma, (int, float)) and gamma > 0.0
         assert scale_fn is None or callable(scale_fn)
         assert scale_mode in ('cycle', 'iterations')
 
@@ -1276,7 +1276,7 @@ class CyclicBS(BSScheduler):
             step_size_up = step_size_down
         self.total_size: float = float(step_size_down + step_size_up)
         self.step_ratio: float = step_size_down / self.total_size
-        self.gamma: float = gamma
+        self.gamma: float = float(gamma)
 
         self._scale_fn_custom: Union[Callable[[int], float], None] = scale_fn
         self.scale_mode: str = scale_mode
