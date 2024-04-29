@@ -49,15 +49,11 @@ TODO.
 
 Please install [PyTorch](https://github.com/pytorch/pytorch) first before installing this repository.
 
-Cloning the repo and installing with pip:
-
 ```
-git clone https://github.com/ancestor-mithril/bs_scheduler.git
-cd bs_scheduler
-pip3 install -e .
+pip install bs-scheduler
 ```
 
-Or directly:
+Or from git:
 
 ```
 pip install git+https://github.com/ancestor-mithril/bs_scheduler.git@master
