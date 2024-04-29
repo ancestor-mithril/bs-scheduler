@@ -30,6 +30,8 @@ keywords = [
 dependencies = [
     "torch>=1.1.0",
 ]
+[tool.setuptools.packages.find]
+include = ["bs_scheduler"]
 
 [project.urls]
 repository = "https://github.com/ancestor-mithril/bs_scheduler"
