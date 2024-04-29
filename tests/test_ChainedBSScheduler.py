@@ -1,3 +1,4 @@
+import os
 import unittest
 
 from bs_scheduler import ChainedBSScheduler, ConstantBS, ExponentialBS
@@ -67,7 +68,8 @@ class TestChainedBSScheduler(BSTest):
 
         batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
         plt.plot(batch_sizes)
-        plt.savefig("ChainedBSScheduler.png")
+        os.makedirs("images", exist_ok=True)
+        plt.savefig("images/ChainedBSScheduler.png")
         plt.close()
 
         model = torch.nn.Linear(10, 10)
@@ -86,7 +88,8 @@ class TestChainedBSScheduler(BSTest):
             learning_rates.append(get_lr(optimizer))
             scheduler.step()
         plt.plot(learning_rates)
-        plt.savefig("ChainedScheduler.png")
+        os.makedirs("images", exist_ok=True)
+        plt.savefig("images/ChainedScheduler.png")
         plt.close()
 
 

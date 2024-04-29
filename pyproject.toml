@@ -42,3 +42,8 @@ docs = [
     "mkdocstrings[python]",
     "mkdocs-material",
 ]
+dev = [
+    "matplotlib",
+    "pytest",
+    "flake8"
+]

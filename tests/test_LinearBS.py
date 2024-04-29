@@ -1,3 +1,4 @@
+import os
 import unittest
 
 import torch
@@ -94,7 +95,8 @@ class TestLinearBS(BSTest):
 
         batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
         plt.plot(batch_sizes)
-        plt.savefig("LinearBS.png")
+        os.makedirs("images", exist_ok=True)
+        plt.savefig("images/LinearBS.png")
         plt.close()
 
         model = torch.nn.Linear(10, 10)
@@ -111,7 +113,8 @@ class TestLinearBS(BSTest):
             learning_rates.append(get_lr(optimizer))
             scheduler.step()
         plt.plot(learning_rates)
-        plt.savefig("LinearLR.png")
+        os.makedirs("images", exist_ok=True)
+        plt.savefig("images/LinearLR.png")
         plt.close()
 
 

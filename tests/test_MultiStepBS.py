@@ -1,3 +1,4 @@
+import os
 import unittest
 
 from bs_scheduler import MultiStepBS
@@ -75,7 +76,8 @@ class TestMultiStepBS(BSTest):
 
         batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
         plt.plot(batch_sizes)
-        plt.savefig("MultiStepBS.png")
+        os.makedirs("images", exist_ok=True)
+        plt.savefig("images/MultiStepBS.png")
         plt.close()
 
         model = torch.nn.Linear(10, 10)
@@ -91,7 +93,8 @@ class TestMultiStepBS(BSTest):
             learning_rates.append(get_lr(optimizer))
             scheduler.step()
         plt.plot(learning_rates)
-        plt.savefig("MultiStepLR.png")
+        os.makedirs("images", exist_ok=True)
+        plt.savefig("images/MultiStepLR.png")
         plt.close()
 
 

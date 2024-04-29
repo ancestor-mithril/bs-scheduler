@@ -1,3 +1,4 @@
+import os
 import unittest
 
 from bs_scheduler import IncreaseBSOnPlateau
@@ -77,7 +78,8 @@ class TestIncreaseBSOnPlateau(BSTest):
         scheduler = IncreaseBSOnPlateau(dataloader, mode='min', threshold_mode='rel', max_batch_size=max_batch_size)
         batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, metrics)
         plt.plot(batch_sizes)
-        plt.savefig("IncreaseBSOnPlateau.png")
+        os.makedirs("images", exist_ok=True)
+        plt.savefig("images/IncreaseBSOnPlateau.png")
         plt.close()
 
         model = torch.nn.Linear(10, 10)
@@ -95,7 +97,8 @@ class TestIncreaseBSOnPlateau(BSTest):
             learning_rates.append(get_lr(optimizer))
             scheduler.step(**d)
         plt.plot(learning_rates)
-        plt.savefig("ReduceLROnPlateau.png")
+        os.makedirs("images", exist_ok=True)
+        plt.savefig("images/ReduceLROnPlateau.png")
         plt.close()
 
 

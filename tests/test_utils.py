@@ -4,9 +4,9 @@ import tempfile
 import unittest
 
 import torch
+from torch.utils.data import DataLoader
 from torchvision import datasets
 from torchvision.transforms import ToTensor
-from torch.utils.data import DataLoader
 
 from bs_scheduler import BSScheduler
 

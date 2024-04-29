@@ -1,3 +1,4 @@
+import os
 import unittest
 
 from bs_scheduler import PolynomialBS
@@ -63,7 +64,8 @@ class TestPolynomialBS(BSTest):
 
         batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
         plt.plot(batch_sizes)
-        plt.savefig("PolynomialBS.png")
+        os.makedirs("images", exist_ok=True)
+        plt.savefig("images/PolynomialBS.png")
         plt.close()
 
         model = torch.nn.Linear(10, 10)
@@ -79,7 +81,8 @@ class TestPolynomialBS(BSTest):
             learning_rates.append(get_lr(optimizer))
             scheduler.step()
         plt.plot(learning_rates)
-        plt.savefig("PolynomialLR.png")
+        os.makedirs("images", exist_ok=True)
+        plt.savefig("images/PolynomialLR.png")
         plt.close()
 
 

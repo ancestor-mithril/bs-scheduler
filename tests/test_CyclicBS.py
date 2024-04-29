@@ -1,3 +1,4 @@
+import os
 import random
 import unittest
 
@@ -160,7 +161,8 @@ class TestConstantBS(BSTest):
 
         batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
         plt.plot(batch_sizes)
-        plt.savefig("CyclicBS-triangular2.png")
+        os.makedirs("images", exist_ok=True)
+        plt.savefig("images/CyclicBS-triangular2.png")
         plt.close()
 
         model = torch.nn.Linear(10, 10)
@@ -177,7 +179,8 @@ class TestConstantBS(BSTest):
             learning_rates.append(get_lr(optimizer))
             scheduler.step()
         plt.plot(learning_rates)
-        plt.savefig("CyclicLR-triangular2.png")
+        os.makedirs("images", exist_ok=True)
+        plt.savefig("images/CyclicLR-triangular2.png")
         plt.close()
 
     def test_graphic_exp_range(self):
@@ -197,7 +200,8 @@ class TestConstantBS(BSTest):
 
         batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
         plt.plot(batch_sizes)
-        plt.savefig("CyclicBS-exp_range.png")
+        os.makedirs("images", exist_ok=True)
+        plt.savefig("images/CyclicBS-exp_range.png")
         plt.close()
 
         model = torch.nn.Linear(10, 10)
@@ -214,7 +218,8 @@ class TestConstantBS(BSTest):
             learning_rates.append(get_lr(optimizer))
             scheduler.step()
         plt.plot(learning_rates)
-        plt.savefig("CyclicLR-exp_range.png")
+        os.makedirs("images", exist_ok=True)
+        plt.savefig("images/CyclicLR-exp_range.png")
         plt.close()
 
 
