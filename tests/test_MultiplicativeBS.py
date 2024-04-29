@@ -25,7 +25,7 @@ class TestMultiplicativeBS(BSTest):
 
     def test_dataloader_lengths(self):
         dataloader = create_dataloader(self.dataset, batch_size=self.base_batch_size)
-        fn = lambda epoch: epoch / 100 + 1
+        fn = lambda epoch: epoch / 100 + 1  # noqa: E731
         scheduler = MultiplicativeBS(dataloader, fn)
         n_epochs = 300
 
@@ -38,7 +38,7 @@ class TestMultiplicativeBS(BSTest):
 
     def test_dataloader_batch_size(self):
         dataloader = create_dataloader(self.dataset, batch_size=self.base_batch_size)
-        fn = lambda epoch: epoch / 100 + 2
+        fn = lambda epoch: epoch / 100 + 2  # noqa: E731
         scheduler = MultiplicativeBS(dataloader, fn, max_batch_size=5000, verbose=False)
         n_epochs = 15
 
@@ -50,7 +50,7 @@ class TestMultiplicativeBS(BSTest):
 
     def test_loading_and_unloading(self):
         dataloader = create_dataloader(self.dataset)
-        fn = lambda epoch: 10 * epoch
+        fn = lambda epoch: 10 * epoch  # noqa: E731
         scheduler = MultiplicativeBS(dataloader, fn)
 
         self.reloading_scheduler(scheduler)

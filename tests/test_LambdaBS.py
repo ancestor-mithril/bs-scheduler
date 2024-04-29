@@ -32,7 +32,7 @@ class TestLambdaBS(BSTest):
 
     def test_dataloader_lengths(self):
         dataloader = create_dataloader(self.dataset, batch_size=self.base_batch_size)
-        fn = lambda epoch: (1 + epoch) ** 1.05
+        fn = lambda epoch: (1 + epoch) ** 1.05  # noqa: E731
         scheduler = LambdaBS(dataloader, fn)
         n_epochs = 300
 
@@ -46,7 +46,7 @@ class TestLambdaBS(BSTest):
 
     def test_dataloader_batch_size(self):
         dataloader = create_dataloader(self.dataset, batch_size=self.base_batch_size)
-        fn = lambda epoch: 10 * epoch
+        fn = lambda epoch: 10 * epoch  # noqa: E731
         scheduler = LambdaBS(dataloader, fn)
         n_epochs = 15
 
@@ -57,7 +57,7 @@ class TestLambdaBS(BSTest):
 
     def test_loading_and_unloading(self):
         dataloader = create_dataloader(self.dataset)
-        fn = lambda epoch: 10 * epoch
+        fn = lambda epoch: 10 * epoch  # noqa: E731
         scheduler = LambdaBS(dataloader, fn)
 
         self.reloading_scheduler(scheduler)
