@@ -1435,8 +1435,8 @@ class CosineAnnealingBSWithWarmRestarts(BSScheduler):
 class OneCycleBS(BSScheduler):
     """ Similar to torch.optim.lr_scheduler.OneCycleLR. Sets the batch size according to the one cycle batch size
     policy, inspired from the 1cycle learning rate policy. The one cycle batch size policy decreases the batch size
-    from the base_batch_size to some minimum batch size and that it increases it to some maximum batch size. bigger
-    than the base_batch_size.
+    from the base_batch_size to some minimum batch size and that it increases it to some maximum batch size bigger than
+    the base_batch_size.
     This policy is inspired from the policy described in the paper `Super-Convergence: Very Fast Training of Neural
     Networks Using Large Learning Rates`_. It only uses two phases (base -> min, min -> max) instead of the three
     phases described in the paper (base -> min, min -> base, base -> max).
