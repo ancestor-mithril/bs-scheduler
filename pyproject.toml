@@ -34,7 +34,9 @@ dependencies = [
 include = ["bs_scheduler"]
 
 [project.urls]
-repository = "https://github.com/ancestor-mithril/bs_scheduler"
+Repository = "https://github.com/ancestor-mithril/bs_scheduler"
+Issues = "https://github.com/ancestor-mithril/bs_scheduler/issues"
+
 
 [project.optional-dependencies]
 docs = [
