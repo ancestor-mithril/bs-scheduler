@@ -676,6 +676,7 @@ class ExponentialBS(BSScheduler):
             return self.batch_size
 
         if self.float_bs is None or rint(self.float_bs) != self.batch_size:
+            # Using rint instead of int because otherwise we will increas the BS faster
             self.float_bs = self.batch_size
 
         self.float_bs *= self.gamma
