@@ -23,7 +23,7 @@ class TestPolynomialBS(BSTest):
         scheduler = PolynomialBS(dataloader, total_iters=total_iters, power=power, verbose=False)
 
         epoch_lengths = simulate_n_epochs(dataloader, scheduler, n_epochs)
-        expected_batch_sizes = [10, 12, 16, 24] + [48] * 16
+        expected_batch_sizes = [10, 15, 20, 25] + [30] * 16
         expected_lengths = self.compute_epoch_lengths(expected_batch_sizes, len(self.dataset), drop_last=False)
         self.assertEqual(epoch_lengths, expected_lengths)
 
@@ -32,10 +32,10 @@ class TestPolynomialBS(BSTest):
         power = 1.0
         n_epochs = 10
         dataloader = create_dataloader(self.dataset, batch_size=self.base_batch_size)
-        scheduler = PolynomialBS(dataloader, total_iters=total_iters, power=power, max_batch_size=100, verbose=False)
+        scheduler = PolynomialBS(dataloader, total_iters=total_iters, power=power, max_batch_size=200, verbose=False)
 
         batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
-        expected_batch_sizes = [64, 71, 80, 91, 100, 100, 100, 100, 100, 100]
+        expected_batch_sizes = [64, 96, 128, 160, 192, 200, 200, 200, 200, 200]
 
         self.assertEqual(batch_sizes, expected_batch_sizes)
 
@@ -70,7 +70,7 @@ class TestPolynomialBS(BSTest):
 
         model = torch.nn.Linear(10, 10)
         optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
-        scheduler = torch.optim.lr_scheduler.PolynomialLR(optimizer, total_iters=total_iters, power=0.1)
+        scheduler = torch.optim.lr_scheduler.PolynomialLR(optimizer, total_iters=total_iters, power=1.0)
         learning_rates = []
 
         def get_lr(optimizer):
