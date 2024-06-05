@@ -810,8 +810,8 @@ class SequentialBS(BSScheduler):
 
 class PolynomialBS(BSScheduler):
     """ Increases the batch size using a polynomial function in the given total_iters. Unlike
-    torch.optim.lr_scheduler.PolynomialLR whose polynomial factor decays from 1.0 to 0.0, in this case the polynomial
-    factor increases from 1.0 to 2.0 ** power.
+    torch.optim.lr_scheduler.PolynomialLR whose polynomial factor decays from 1.0 to 0.5 ** power, in this case the
+    polynomial factor decays from 1.5 ** power to 1.0.
 
     Args:
         dataloader (DataLoader): Wrapped dataloader.
@@ -858,8 +858,9 @@ class PolynomialBS(BSScheduler):
             self._finished = self.last_epoch >= self.total_iters
             return self.batch_size
 
-        factor = ((1.0 - (self.last_epoch - 1) / self.total_iters) / (
-                1.0 - self.last_epoch / self.total_iters)) ** self.power
+        remaining_steps = self.total_iters - self.last_epoch
+        factor = 2.0 - ((1.0 - remaining_steps / self.total_iters) / (
+                1.0 - (remaining_steps - 1) / self.total_iters)) ** self.power
         return rint(self.batch_size * factor)
 
 
@@ -933,7 +934,7 @@ class CosineAnnealingBS(BSScheduler):
         else:
             new_bs = (1 + math.cos(math.pi * self.last_epoch / self.total_iters)) / (
                     1 + math.cos(math.pi * (self.last_epoch - 1) / self.total_iters)) * (
-                    self._float_batch_size - self.max_batch_size) + self.max_batch_size
+                             self._float_batch_size - self.max_batch_size) + self.max_batch_size
 
         self._float_batch_size = new_bs
         return clip(rint(new_bs), min=self.base_batch_size, max=self.max_batch_size)
