@@ -53,8 +53,8 @@ class TestExponentialBS(BSTest):
 
         base_batch_size = 10
         dataloader = create_dataloader(self.dataset, batch_size=base_batch_size)
-        scheduler = ExponentialBS(dataloader, gamma=2, max_batch_size=100, verbose=False)
-        n_epochs = 10
+        scheduler = ExponentialBS(dataloader, gamma=1.05, max_batch_size=500, verbose=False)
+        n_epochs = 50
 
         batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
         plt.plot(batch_sizes)
@@ -64,7 +64,7 @@ class TestExponentialBS(BSTest):
 
         model = torch.nn.Linear(10, 10)
         optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
-        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.5)
+        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
         learning_rates = []
 
         def get_lr(optimizer):
