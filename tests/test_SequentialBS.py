@@ -24,7 +24,7 @@ class TestSequentialBS(BSTest):
         n_epochs = 10
 
         epoch_lengths = simulate_n_epochs(dataloader, scheduler, n_epochs)
-        expected_batch_sizes = [100] * 4 + [10, 11, 12, 13, 14, 15]
+        expected_batch_sizes = [100] * 4 + [10, 11, 12, 13, 15, 16]
         expected_lengths = self.compute_epoch_lengths(expected_batch_sizes, len(self.dataset), drop_last=False)
         self.assertEqual(epoch_lengths, expected_lengths)
 

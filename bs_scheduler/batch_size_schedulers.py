@@ -665,6 +665,7 @@ class ExponentialBS(BSScheduler):
         assert gamma > 0.0
         # Gamma is expected to be greater than 1.0 for batch size growth. It can be lower than 1.0 for batch size decay.
         self.gamma: float = gamma
+        self.float_bs: Union[float, None] = None
         super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
 
     def get_new_bs(self) -> int:
@@ -674,7 +675,12 @@ class ExponentialBS(BSScheduler):
         if self.last_epoch == 0:
             return self.batch_size
 
-        return rint(self.batch_size * self.gamma)
+        if self.float_bs is None or rint(self.float_bs) != self.batch_size:
+            # Using rint instead of int because otherwise we will increas the BS faster
+            self.float_bs = self.batch_size
+
+        self.float_bs *= self.gamma
+        return rint(self.float_bs)
 
 
 class SequentialBS(BSScheduler):
