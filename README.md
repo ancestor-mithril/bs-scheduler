@@ -6,13 +6,13 @@ A Batch Size Scheduler library compatible with PyTorch DataLoaders.
 
 Documentation: [API Reference](https://ancestor-mithril.github.io/bs_scheduler/).
 
-Examples: TODO.
+<!--Examples: TODO. -->
 
 <!--For Release Notes, see TODO. -->
 
 ## Why use a Batch Size Scheduler?
 
-TODO: Cite papers and explain why.
+<!--TODO: Cite papers and explain why. -->
 
 ## Available Schedulers
 
@@ -41,9 +41,13 @@ TODO: Cite papers and explain why.
     scheduler should be called when.
 15. `ChainedBSScheduler` - chains a list of batch size schedulers and calls them together each step.
 
+<!--
+
 ## Quick Start
 
 TODO.
+
+-->
 
 ## Installation
 
@@ -63,4 +67,4 @@ pip install git+https://github.com/ancestor-mithril/bs_scheduler.git@master
 
 The library is licensed under the [BSD-3-Clause license](LICENSE).
 
-Citation: TODO.
+<!--Citation: TODO. -->
