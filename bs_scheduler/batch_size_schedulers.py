@@ -132,7 +132,7 @@ class BSScheduler:
             check_isinstance(dataloader, DataLoader)
         except TypeError:
             print("Parameter dataloader is not a DataLoader. If you really need this feature, please open an issue at "
-                  "https://github.com/ancestor-mithril/bs_scheduler/issues and describe your use case.")
+                  "https://github.com/ancestor-mithril/bs-scheduler/issues and describe your use case.")
             raise
         self.dataloader: DataLoader = dataloader
         self.verbose: bool = verbose
