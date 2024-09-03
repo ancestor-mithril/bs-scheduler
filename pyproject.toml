@@ -12,8 +12,7 @@ maintainers = [
     { name = "George Stoica", email = "george.stoica@senticlab.com"},
 ]
 classifiers = [
-    "Development Status :: 4 - Beta",
-#    "Development Status :: 5 - Production/Stable",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "Programming Language :: Python :: 3",
