@@ -1,4 +1,5 @@
 site_name: BS Scheduler
+repo_url: https://github.com/ancestor-mithril/bs-scheduler
 
 theme:
   name: "material"
