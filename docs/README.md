@@ -1,1 +1,1 @@
-::: bs-scheduler
+::: bs_scheduler
