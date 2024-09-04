@@ -9,20 +9,20 @@
       
       
       
+        <link rel="prev" href="../reference/">
       
-        <link rel="next" href="reference/">
       
       
-      <link rel="icon" href="assets/images/favicon.png">
+      <link rel="icon" href="../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.4.5">
     
     
       
-        <title>BS Scheduler</title>
+        <title>Tutorials - BS Scheduler</title>
       
     
     
-      <link rel="stylesheet" href="assets/stylesheets/main.6a10b989.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.6a10b989.min.css">
       
       
 
@@ -41,9 +41,9 @@
       
     
     
-      <link rel="stylesheet" href="assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -65,7 +65,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#bs-scheduler" class="md-skip">
+        <a href="#basic-usage" class="md-skip">
           Skip to content
         </a>
       
@@ -81,7 +81,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="." title="BS Scheduler" class="md-header__button md-logo" aria-label="BS Scheduler" data-md-component="logo">
+    <a href=".." title="BS Scheduler" class="md-header__button md-logo" aria-label="BS Scheduler" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -101,7 +101,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Home
+              Tutorials
             
           </span>
         </div>
@@ -148,7 +148,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="." title="BS Scheduler" class="md-nav__button md-logo" aria-label="BS Scheduler" data-md-component="logo">
+    <a href=".." title="BS Scheduler" class="md-nav__button md-logo" aria-label="BS Scheduler" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -175,29 +175,9 @@
       
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Home
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="." class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -206,33 +186,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#batch-size-schedulers" class="md-nav__link">
-    Batch Size Schedulers
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -243,7 +196,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/" class="md-nav__link">
+      <a href="../reference/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -260,9 +213,27 @@
       
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="tutorials/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Tutorials
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -271,6 +242,31 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#basic-usage" class="md-nav__link">
+    Basic usage
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -292,8 +288,6 @@
   
   
   
-    
-  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -302,8 +296,8 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#batch-size-schedulers" class="md-nav__link">
-    Batch Size Schedulers
+  <a href="#basic-usage" class="md-nav__link">
+    Basic usage
   </a>
   
 </li>
@@ -326,34 +320,115 @@
   
 
 
-<h1 id="bs-scheduler">bs-scheduler</h1>
-<p>A Batch Size Scheduler library compatible with PyTorch DataLoaders.</p>
-<hr />
-<h3 id="batch-size-schedulers">Batch Size Schedulers</h3>
-<ol>
-<li><a href="https://ancestor-mithril.github.io/bs-scheduler/reference/#bs_scheduler.LambdaBS">LambdaBS</a> - sets the batch size to the base batch size times a given lambda.</li>
-<li><a href="https://ancestor-mithril.github.io/bs-scheduler/reference/#bs_scheduler.MultiplicativeBS">MultiplicativeBS</a> - sets the batch size to the current batch size times a given lambda.</li>
-<li><a href="https://ancestor-mithril.github.io/bs-scheduler/reference/#bs_scheduler.StepBS">StepBS</a> - multiplies the batch size with a given factor at a given number of steps.</li>
-<li><a href="https://ancestor-mithril.github.io/bs-scheduler/reference/#bs_scheduler.MultiStepBS">MultiStepBS</a> - multiplies the batch size with a given factor each time a milestone is reached.</li>
-<li><a href="https://ancestor-mithril.github.io/bs-scheduler/reference/#bs_scheduler.ConstantBS">ConstantBS</a> - multiplies the batch size by a given factor once and decreases it again to its base value after a
-   given number of steps.</li>
-<li><a href="https://ancestor-mithril.github.io/bs-scheduler/reference/#bs_scheduler.LinearBS">LinearBS</a> - increases the batch size by a linearly changing multiplicative factor for a given number of steps.</li>
-<li><a href="https://ancestor-mithril.github.io/bs-scheduler/reference/#bs_scheduler.ExponentialBS">ExponentialBS</a> - increases the batch size by a given $\gamma$ each step.</li>
-<li><a href="https://ancestor-mithril.github.io/bs-scheduler/reference/#bs_scheduler.PolynomialBS">PolynomialBS</a> - increases the batch size using a polynomial function in a given number of steps.</li>
-<li><a href="https://ancestor-mithril.github.io/bs-scheduler/reference/#bs_scheduler.CosineAnnealingBS">CosineAnnealingBS</a> - increases the batch size to a maximum batch size and decreases it again following a cyclic
-   cosine curve.</li>
-<li><a href="https://ancestor-mithril.github.io/bs-scheduler/reference/#bs_scheduler.IncreaseBSOnPlateau">IncreaseBSOnPlateau</a> - increases the batch size each time a given metric has stopped improving for a given number
-    of steps.</li>
-<li><a href="https://ancestor-mithril.github.io/bs-scheduler/reference/#bs_scheduler.CyclicBS">CyclicBS</a> - cycles the batch size between two boundaries with a constant frequency, while also scaling the
-    distance between boundaries.</li>
-<li><a href="https://ancestor-mithril.github.io/bs-scheduler/reference/#bs_scheduler.CosineAnnealingBSWithWarmRestarts">CosineAnnealingBSWithWarmRestarts</a> - increases the batch size to a maximum batch size following a cosine curve,
-    then restarts while also scaling the number of iterations until the next restart.</li>
-<li><a href="https://ancestor-mithril.github.io/bs-scheduler/reference/#bs_scheduler.OneCycleBS">OneCycleBS</a> - decreases the batch size to a minimum batch size then increases it to a given maximum batch size,
-    following a linear or cosine annealing strategy.</li>
-<li><a href="https://ancestor-mithril.github.io/bs-scheduler/reference/#bs_scheduler.SequentialBS">SequentialBS</a> - calls a list of schedulers sequentially given a list of milestone points which reflect which
-    scheduler should be called when.</li>
-<li><a href="https://ancestor-mithril.github.io/bs-scheduler/reference/#bs_scheduler.ChainedBSScheduler">ChainedBSScheduler</a> - chains a list of batch size schedulers and calls them together each step.</li>
-</ol>
+  <h1>Tutorials</h1>
+
+<h2 id="basic-usage">Basic usage</h2>
+<p>Integrating a Batch Size Scheduler inside a PyTorch training script is simple:</p>
+<pre><code class="language-python">from torch.utils.data import DataLoader
+from bs_scheduler import StepBS  # We use StepBS in this example, but we can use any BS Scheduler
+
+# Define the Dataset and the DataLoader
+dataset = ...
+dataloader = DataLoader(..., batch_size=16)
+scheduler = StepBS(dataloader, step_size=30, gamma=2)  # Activates every 30 epochs and doubles the batch size.
+
+for _ in range(100):
+    train(...)
+    validate(...)
+    scheduler.step()
+
+# We expect the batch size to have the following values:
+# epoch 0 - 29: 16
+# epoch 30 - 59: 32
+# epoch 60 - 89: 64
+# epoch 90 - 99: 128
+</code></pre>
+<p>Full example:</p>
+<pre><code class="language-python">import timm
+import torch.cuda
+import torchvision.datasets
+from torch import nn
+from torch.optim import SGD
+from torch.utils.data import DataLoader
+from torchvision.transforms import v2
+
+from bs_scheduler import StepBS
+
+device = torch.device(&quot;cuda&quot; if torch.cuda.is_available() else &quot;cpu&quot;)
+
+transforms = v2.Compose([v2.ToImage(), v2.ToDtype(torch.float32, scale=True)])
+train_loader = DataLoader(
+    torchvision.datasets.CIFAR10(
+        root=&quot;../data&quot;,
+        train=True,
+        download=True,
+        transform=transforms,
+    ),
+    batch_size=100,
+)
+val_loader = DataLoader(
+    torchvision.datasets.CIFAR10(root=&quot;../data&quot;, train=False, transform=transforms),
+    batch_size=500,
+)
+scheduler = StepBS(train_loader, step_size=10)
+
+model = timm.create_model(&quot;hf_hub:grodino/resnet18_cifar10&quot;, pretrained=False).to(
+    device
+)
+criterion = nn.CrossEntropyLoss()
+optimizer = SGD(model.parameters(), lr=0.001)
+
+
+def train():
+    correct = 0
+    total = 0
+
+    model.train()
+    for inputs, targets in train_loader:
+        inputs, targets = inputs.to(device), targets.to(device)
+        outputs = model(inputs)
+        loss = criterion(outputs, targets)
+        loss.backward()
+        optimizer.step()
+        optimizer.zero_grad()
+
+        predicted = outputs.argmax(1)
+        total += targets.size(0)
+        correct += predicted.eq(targets).sum().item()
+
+    return correct / total
+
+
+@torch.inference_mode()
+def val():
+    correct = 0
+    total = 0
+
+    model.eval()
+    for inputs, targets in val_loader:
+        inputs, targets = inputs.to(device), targets.to(device)
+        outputs = model(inputs)
+
+        predicted = outputs.argmax(1)
+        total += targets.size(0)
+        correct += predicted.eq(targets).sum().item()
+
+    return correct / total
+
+
+def main():
+    for epoch in range(100):
+        train_accuracy = train()
+        val_accuracy = val()
+
+        scheduler.step()
+
+        print(train_accuracy, val_accuracy)
+
+
+if __name__ == &quot;__main__&quot;:
+    main() 
+</code></pre>
 
 
 
@@ -392,10 +467,10 @@
     </div>
     
     
-    <script id="__config" type="application/json">{"base": ".", "features": [], "search": "assets/javascripts/workers/search.f886a092.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.f886a092.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="assets/javascripts/bundle.aecac24b.min.js"></script>
+      <script src="../assets/javascripts/bundle.aecac24b.min.js"></script>
       
     
   </body>
