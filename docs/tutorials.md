@@ -4,12 +4,14 @@ Integrating a Batch Size Scheduler inside a PyTorch training script is simple:
 
 ```python
 from torch.utils.data import DataLoader
-from bs_scheduler import StepBS  # We use StepBS in this example, but we can use any BS Scheduler
+from bs_scheduler import StepBS
+# We use StepBS in this example, but we can use any BS Scheduler
 
 # Define the Dataset and the DataLoader
 dataset = ...
 dataloader = DataLoader(..., batch_size=16)
-scheduler = StepBS(dataloader, step_size=30, gamma=2)  # Activates every 30 epochs and doubles the batch size.
+scheduler = StepBS(dataloader, step_size=30, gamma=2)
+# Activates every 30 epochs and doubles the batch size.
 
 for _ in range(100):
     train(...)
