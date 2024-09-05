@@ -4,15 +4,26 @@ A Batch Size Scheduler library compatible with PyTorch DataLoaders.
 
 *** 
 
-Documentation: [API Reference](https://ancestor-mithril.github.io/bs-scheduler/).
+## Documentation
 
-<!--Examples: TODO. -->
+* [API Reference](https://ancestor-mithril.github.io/bs-scheduler).
+
+* [Examples](https://ancestor-mithril.github.io/bs-scheduler/tutorials).
 
 <!--For Release Notes, see TODO. -->
 
+***
+
 ## Why use a Batch Size Scheduler?
 
-<!--TODO: Cite papers and explain why. -->
+* Using a big batch size has several advantages:
+  * Better hardware utilization.
+  * Enhanced parallelism.
+  * Faster training.
+* However, using a big batch size from the start may lead to a generalization gap.
+* Therefore, the solution is to gradually increase the batch size, similar to a learning rate decay policy.
+* See [Don't Decay the Learning Rate, Increase the Batch Size](https://arxiv.org/abs/1711.00489).
+
 
 ## Available Schedulers
 
@@ -57,14 +68,12 @@ Please install [PyTorch](https://github.com/pytorch/pytorch) first before instal
 pip install bs-scheduler
 ```
 
-Or from git:
-
-```
-pip install git+https://github.com/ancestor-mithril/bs-scheduler.git@master
-```
-
 ## Licensing
 
 The library is licensed under the [BSD-3-Clause license](LICENSE).
+
+## Citation
+
+To be added...
 
 <!--Citation: TODO. -->
