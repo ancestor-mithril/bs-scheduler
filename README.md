@@ -72,4 +72,8 @@ pip install bs-scheduler
 
 The library is licensed under the [BSD-3-Clause license](LICENSE).
 
+## Citation
+
+To be added...
+
 <!--Citation: TODO. -->
