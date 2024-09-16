@@ -1,6 +1,6 @@
 [project]
 name = "bs-scheduler"
-version = "0.5.0"
+version = "0.5.1"
 requires-python = ">=3.9"
 description = "A PyTorch Dataloader compatible batch size scheduler library."
 readme = "README.md"
@@ -30,7 +30,7 @@ dependencies = [
     "torch>=1.1.0",
 ]
 [tool.setuptools.packages.find]
-include = ["bs-scheduler"]
+include = ["bs_scheduler"]
 
 [project.urls]
 Repository = "https://github.com/ancestor-mithril/bs-scheduler"
