@@ -15,23 +15,7 @@ __all__ = ['LambdaBS', 'MultiplicativeBS', 'StepBS', 'MultiStepBS', 'ConstantBS'
            'CosineAnnealingBSWithWarmRestarts', 'OneCycleBS', 'BSScheduler']
 
 from .batch_size_manager import BatchSizeManager, DefaultBatchSizeManager, CustomBatchSizeManager
-from .utils import check_isinstance
-
-
-def rint(x: float) -> int:
-    """ Rounds to the nearest int and returns the value as int.
-    """
-    return int(round(x))
-
-
-def clip(x: int, min_x: int, max_x: int) -> int:
-    """ Clips x to [min, max] interval.
-    """
-    if x < min_x:
-        return min_x
-    if x > max_x:
-        return max_x
-    return x
+from .utils import check_isinstance, clip, rint
 
 
 class BSScheduler:
