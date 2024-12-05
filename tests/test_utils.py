@@ -30,7 +30,7 @@ def create_dataloader(dataset, num_workers=0, batch_size=64, drop_last=False):
 
 
 def iterate(dataloader):
-    inferred_len = len(dataloader)  # TODO: review name
+    inferred_len = len(dataloader)
     real_len = 0
     for _ in dataloader:
         real_len += 1

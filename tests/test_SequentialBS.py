@@ -12,8 +12,6 @@ class TestSequentialBS(BSTest):
         self.dataset = fashion_mnist()
         # TODO: Test multiple dataloaders: dataloader with workers, dataloaders with samplers, with drop last and
         #  without drop last and so on.
-        # TODO: Test more combinations of batch size schedulers.
-        # TODO: Check that SequentialBS throws errors when it should.
 
     def test_dataloader_lengths(self):
         base_batch_size = 10

@@ -10,9 +10,6 @@ class TestIncreaseBSOnPlateau(BSTest):
     def setUp(self):
         self.base_batch_size = 64
         self.dataset = fashion_mnist()
-        # TODO: Test multiple dataloaders: dataloader with workers, dataloaders with samplers, with drop last and
-        #  without drop last and so on.
-        # TODO: Check that create_dataloader throws errors when it should.
 
     def test_constant_metric(self):
         base_batch_size = 10
