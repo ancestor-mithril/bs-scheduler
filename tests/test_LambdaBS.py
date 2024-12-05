@@ -9,8 +9,6 @@ class TestLambdaBS(BSTest):
     def setUp(self):
         self.base_batch_size = 64
         self.dataset = fashion_mnist()
-        # TODO: Test multiple dataloaders: dataloader with workers, dataloaders with samplers, with drop last and
-        #  without drop last and so on.
         # TODO: Test lambda with argument.
 
     @staticmethod

@@ -10,8 +10,6 @@ class TestStepBS(BSTest):
     def setUp(self):
         self.base_batch_size = 64
         self.dataset = fashion_mnist()
-        # TODO: Test multiple dataloaders: dataloader with workers, dataloaders with samplers, with drop last and
-        #  without drop last and so on.
 
     @staticmethod
     def compute_expected_batch_sizes(epochs, base_batch_size, step_size, gamma, min_batch_size, max_batch_size):

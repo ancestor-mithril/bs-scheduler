@@ -10,8 +10,6 @@ class TestExponentialBS(BSTest):
     def setUp(self):
         self.base_batch_size = 64
         self.dataset = fashion_mnist()
-        # TODO: Test multiple dataloaders: dataloader with workers, dataloaders with samplers, with drop last and
-        #  without drop last and so on.
 
     def test_dataloader_lengths(self):
         dataloader = create_dataloader(self.dataset, batch_size=self.base_batch_size)
