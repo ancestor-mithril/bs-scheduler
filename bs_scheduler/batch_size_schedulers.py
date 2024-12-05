@@ -952,8 +952,7 @@ class IncreaseBSOnPlateau(BSScheduler):
     Increases the batch size when a metric has stopped improving. Models often benefit from increasing the batch size
     by a factor once the learning stagnates. This scheduler receives a metric value and if no improvement is seen for a
     given number of epochs, the batch size is increased.
-    Unfortunately, this class is not compatible with the other batch size schedulers as its step() function needs to
-    receive the metric value.
+    The step() function needs to receive the metric value using the `metrics` keyword argument.
 
     Args:
         dataloader (DataLoader): Wrapped dataloader.
@@ -1068,9 +1067,9 @@ class IncreaseBSOnPlateau(BSScheduler):
         if self.last_epoch == 0:  # Don't do anything at initialization.
             return self.batch_size
 
-        metric = kwargs.pop('metric', None)
+        metric = kwargs.pop('metrics', None)
         if metric is None:
-            raise TypeError("IncreaseBSOnPlateau requires passing a 'metric' keyword argument in the step() function.")
+            raise TypeError("IncreaseBSOnPlateau requires passing a 'metrics' keyword argument in the step() function.")
 
         current = float(metric)
         if self.is_better(current, self.best, self.threshold):

@@ -16,7 +16,7 @@ class TestIncreaseBSOnPlateau(BSTest):
         max_batch_size = 100
 
         n_epochs = 100
-        metrics = [{"metric": 0.1}] * n_epochs
+        metrics = [{"metrics": 0.1}] * n_epochs
 
         dataloader = create_dataloader(self.dataset, batch_size=base_batch_size)
         scheduler1 = IncreaseBSOnPlateau(dataloader, mode='min', threshold_mode='rel', max_batch_size=max_batch_size)
@@ -69,7 +69,7 @@ class TestIncreaseBSOnPlateau(BSTest):
         max_batch_size = 100
 
         n_epochs = 100
-        metrics = [{"metric": 0.1}] * n_epochs
+        metrics = [{"metrics": 0.1}] * n_epochs
 
         dataloader = create_dataloader(self.dataset, batch_size=base_batch_size)
         scheduler = IncreaseBSOnPlateau(dataloader, mode='min', threshold_mode='rel', max_batch_size=max_batch_size)
