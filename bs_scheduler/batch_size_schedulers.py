@@ -147,10 +147,7 @@ class BSScheduler:
             print(f'Adjusting batch size to {new_bs}.')
 
     def step(self, **kwargs):
-        # TODO: Documentation
-        # TODO: Check how the dataloader behaves if we change the batch size mid epoch. Write a guideline for this.
-        #  Changing the batch size does not impact batch sizes loaded by workers before the change.
-        # TODO: Check if changing the batch size needs locking. Because of multiprocessing. Normally it should not.
+        # Changing the batch size does not impact batch sizes loaded by workers before the change.
         if self.finished:
             return  # Stops doing work if already finished.
 
