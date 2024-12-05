@@ -62,10 +62,12 @@ class CustomBatchSizeManager(BatchSizeManager):
             raise KeyError("Because the dataloader does not have a batch sampler, the dataset owns and controls the "
                            "batch size. In order to change the batch size after dataloader creation we require our "
                            "users to implement a Callable[[int],None] method named `change_batch_size` in their "
-                           "dataset which changes the batch size. Please see TODO for examples.")
+                           "dataset which changes the batch size. Please see "
+                           "https://ancestor-mithril.github.io/bs-scheduler/tutorials/ for examples.")
         if not hasattr(dataset, 'get_batch_size'):
             raise KeyError("We require our users to implement a Callable[[], int] method named `get_batch_size` in "
-                           "their dataset which returns the current batch size. Please see TODO for examples. ")
+                           "their dataset which returns the current batch size. Please see "
+                           "https://ancestor-mithril.github.io/bs-scheduler/tutorials/ for examples. ")
         self.dataset = dataset
 
     def get_current_batch_size(self) -> int:
