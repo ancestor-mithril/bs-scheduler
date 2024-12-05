@@ -56,6 +56,8 @@ class BSScheduler:
                 # We require the client to implement a "change_batch_size" method and a "get_batch_size" method for
                 # their dataset.
                 batch_size_manager = CustomBatchSizeManager(self.dataloader.dataset)
+        else:
+            check_isinstance(batch_size_manager, BatchSizeManager)
         self.batch_size_manager: BatchSizeManager = batch_size_manager
 
         self.last_epoch: int = -1
