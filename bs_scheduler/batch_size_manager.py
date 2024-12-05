@@ -4,8 +4,8 @@ from .utils import check_isinstance
 
 
 class BatchSizeManager:
-    """ Base class for all batch size managers, used for getting and setting the batch size. It is not mandatory to
-    inherit from this, but users must implement :meth:`get_current_batch_size` and :meth:`set_batch_size`.
+    """ Base class for all batch size managers, used for getting and setting the batch size.
+    Users must implement :meth:`get_current_batch_size` and :meth:`set_batch_size`.
     """
 
     def get_current_batch_size(self) -> int:
