@@ -9,7 +9,7 @@ from bs_scheduler import StepBS
 
 # Define the Dataset and the DataLoader
 dataset = ...
-dataloader = DataLoader(..., batch_size=16)
+dataloader = DataLoader(dataset, batch_size=16)
 scheduler = StepBS(dataloader, step_size=30, gamma=2)
 # Activates every 30 epochs and doubles the batch size.
 
