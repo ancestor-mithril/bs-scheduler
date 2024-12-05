@@ -5,7 +5,7 @@ import types
 from bisect import bisect_right
 from collections import Counter
 from functools import partial
-from typing import Callable, Union, Sequence, Tuple
+from typing import Callable, Sequence, Tuple, Optional
 
 import torch
 from torch.utils.data import DataLoader
@@ -19,8 +19,8 @@ from .utils import check_isinstance, clip, rint
 
 
 class BSScheduler:
-    def __init__(self, dataloader: DataLoader, batch_size_manager: Union[BatchSizeManager, None],
-                 max_batch_size: Union[int, None], min_batch_size: int, verbose: bool):
+    def __init__(self, dataloader: DataLoader, batch_size_manager: Optional[BatchSizeManager],
+                 max_batch_size: Optional[int], min_batch_size: int, verbose: bool):
         try:
             # Should we allow our users to use us with dataloader == None and just use the batch size managers they
             # provide us with?
@@ -171,9 +171,9 @@ class LambdaBS(BSScheduler):
         dataloader (DataLoader): Wrapped dataloader.
         bs_lambda (Callable[[int], float]): A function which computes a multiplicative factor given an integer
             parameter epoch.
-        batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
+        batch_size_manager (Optional[BatchSizeManager]): If not None, a custom class which manages the batch size,
             which provides a getter and setter for the batch size. Default: None.
-        max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
+        max_batch_size (Optional[int]): Upper limit for the batch size so that a batch of size max_batch_size fits
             in the memory. If None or greater than the lenght of the dataset wrapped by the dataloader, max_batch_size
             is set to `len(self.dataloader.dataset)`. Default: None.
         min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
@@ -190,7 +190,7 @@ class LambdaBS(BSScheduler):
     """
 
     def __init__(self, dataloader: DataLoader, bs_lambda: Callable[[int], float],
-                 batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
+                 batch_size_manager: Optional[BatchSizeManager] = None, max_batch_size: Optional[int] = None,
                  min_batch_size: int = 1, verbose: bool = False):
         assert callable(bs_lambda)
         self.bs_lambda: Callable[[int], float] = bs_lambda
@@ -235,9 +235,9 @@ class MultiplicativeBS(BSScheduler):
         dataloader (DataLoader): Wrapped dataloader.
         bs_lambda (Callable[[int], float]): A function which computes a multiplicative factor given an integer
             parameter epoch.
-        batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
+        batch_size_manager (Optional[BatchSizeManager]): If not None, a custom class which manages the batch size,
             which provides a getter and setter for the batch size. Default: None.
-        max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
+        max_batch_size (Optional[int]): Upper limit for the batch size so that a batch of size max_batch_size fits
             in the memory. If None or greater than the lenght of the dataset wrapped by the dataloader, max_batch_size
             is set to `len(self.dataloader.dataset)`. Default: None.
         min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
@@ -254,7 +254,7 @@ class MultiplicativeBS(BSScheduler):
     """
 
     def __init__(self, dataloader: DataLoader, bs_lambda: Callable[[int], float],
-                 batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
+                 batch_size_manager: Optional[BatchSizeManager] = None, max_batch_size: Optional[int] = None,
                  min_batch_size: int = 1, verbose: bool = False):
         assert callable(bs_lambda)
         self.bs_lambda: Callable[[int], float] = bs_lambda
@@ -297,9 +297,9 @@ class StepBS(BSScheduler):
         dataloader (DataLoader): Wrapped dataloader.
         step_size (int): Period of batch size growth.
         gamma (float): Multiplicative factor of batch size growth. Default: 2.0.
-        batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
+        batch_size_manager (Optional[BatchSizeManager]): If not None, a custom class which manages the batch size,
             which provides a getter and setter for the batch size. Default: None.
-        max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
+        max_batch_size (Optional[int]): Upper limit for the batch size so that a batch of size max_batch_size fits
             in the memory. If None or greater than the lenght of the dataset wrapped by the dataloader, max_batch_size
             is set to `len(self.dataloader.dataset)`. Default: None.
         min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
@@ -320,7 +320,7 @@ class StepBS(BSScheduler):
     """
 
     def __init__(self, dataloader: DataLoader, step_size: int, gamma: float = 2.0,
-                 batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
+                 batch_size_manager: Optional[BatchSizeManager] = None, max_batch_size: Optional[int] = None,
                  min_batch_size: int = 1, verbose: bool = False):
         assert isinstance(step_size, int) and step_size > 0
         assert gamma > 0.0
@@ -344,9 +344,9 @@ class MultiStepBS(BSScheduler):
     Args:
         dataloader (DataLoader): Wrapped dataloader.
         milestones (Sequence[int]): Sequence of epoch indices.
-        batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
+        batch_size_manager (Optional[BatchSizeManager]): If not None, a custom class which manages the batch size,
             which provides a getter and setter for the batch size. Default: None.
-        max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
+        max_batch_size (Optional[int]): Upper limit for the batch size so that a batch of size max_batch_size fits
             in the memory. If None or greater than the lenght of the dataset wrapped by the dataloader, max_batch_size
             is set to `len(self.dataloader.dataset)`. Default: None.
         min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
@@ -366,7 +366,7 @@ class MultiStepBS(BSScheduler):
     """
 
     def __init__(self, dataloader: DataLoader, milestones: Sequence[int], gamma: float = 2.0,
-                 batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
+                 batch_size_manager: Optional[BatchSizeManager] = None, max_batch_size: Optional[int] = None,
                  min_batch_size: int = 1, verbose: bool = False):
         assert isinstance(milestones, (tuple, list))
         assert len(milestones) > 0 and all([x > 0 and isinstance(x, int) for x in milestones])
@@ -408,9 +408,9 @@ class ConstantBS(BSScheduler):
         dataloader (DataLoader): Wrapped dataloader.
         factor (float): The number we multiply the batch size until the milestone.
         milestone (int): The number of steps that the scheduler increases the learning rate. Default: 5.
-        batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
+        batch_size_manager (Optional[BatchSizeManager]): If not None, a custom class which manages the batch size,
             which provides a getter and setter for the batch size. Default: None.
-        max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
+        max_batch_size (Optional[int]): Upper limit for the batch size so that a batch of size max_batch_size fits
             in the memory. If None or greater than the lenght of the dataset wrapped by the dataloader, max_batch_size
             is set to `len(self.dataloader.dataset)`. Default: None.
         min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
@@ -431,7 +431,7 @@ class ConstantBS(BSScheduler):
     """
 
     def __init__(self, dataloader: DataLoader, factor: float, milestone: int = 5,
-                 batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
+                 batch_size_manager: Optional[BatchSizeManager] = None, max_batch_size: Optional[int] = None,
                  min_batch_size: int = 1, verbose: bool = False):
         assert isinstance(milestone, int) and milestone > 0
         assert factor > 0.0
@@ -473,9 +473,9 @@ class LinearBS(BSScheduler):
         end_factor (float): The number we multiply the batch size at the end of the linear changing process.
                 Default: 1.0.
         milestone (int): The number of steps that the scheduler increases the learning rate. Default: 5.
-        batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
+        batch_size_manager (Optional[BatchSizeManager]): If not None, a custom class which manages the batch size,
             which provides a getter and setter for the batch size. Default: None.
-        max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
+        max_batch_size (Optional[int]): Upper limit for the batch size so that a batch of size max_batch_size fits
             in the memory. If None or greater than the lenght of the dataset wrapped by the dataloader, max_batch_size
             is set to `len(self.dataloader.dataset)`. Default: None.
         min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
@@ -498,7 +498,7 @@ class LinearBS(BSScheduler):
     """
 
     def __init__(self, dataloader: DataLoader, start_factor: float = 3.0, end_factor: float = 1.0, milestone: int = 5,
-                 batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
+                 batch_size_manager: Optional[BatchSizeManager] = None, max_batch_size: Optional[int] = None,
                  min_batch_size: int = 1, verbose: bool = False):
         assert isinstance(milestone, int) and milestone > 0
         assert start_factor > 0.0 and end_factor > 0.0
@@ -532,9 +532,9 @@ class ExponentialBS(BSScheduler):
     Args:
         dataloader (DataLoader): Wrapped dataloader.
         gamma (float): Multiplicative factor of batch size growth.
-        batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
+        batch_size_manager (Optional[BatchSizeManager]): If not None, a custom class which manages the batch size,
             which provides a getter and setter for the batch size. Default: None.
-        max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
+        max_batch_size (Optional[int]): Upper limit for the batch size so that a batch of size max_batch_size fits
             in the memory. If None or greater than the lenght of the dataset wrapped by the dataloader, max_batch_size
             is set to `len(self.dataloader.dataset)`. Default: None.
         min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
@@ -555,12 +555,12 @@ class ExponentialBS(BSScheduler):
         >>>     scheduler.step()
     """
 
-    def __init__(self, dataloader: DataLoader, gamma: float, batch_size_manager: Union[BatchSizeManager, None] = None,
-                 max_batch_size: Union[int, None] = None, min_batch_size: int = 1, verbose: bool = False):
+    def __init__(self, dataloader: DataLoader, gamma: float, batch_size_manager: Optional[BatchSizeManager] = None,
+                 max_batch_size: Optional[int] = None, min_batch_size: int = 1, verbose: bool = False):
         assert gamma > 0.0
         # Gamma is expected to be greater than 1.0 for batch size growth. It can be lower than 1.0 for batch size decay.
         self.gamma: float = gamma
-        self.float_bs: Union[float, None] = None
+        self.float_bs: Optional[float] = None
         super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
 
     def get_new_bs(self) -> int:
@@ -718,9 +718,9 @@ class PolynomialBS(BSScheduler):
         dataloader (DataLoader): Wrapped dataloader.
         total_iters (int): The number of steps that the scheduler increases the batch size.
         power (float): The power of the polynomial. Default: 1.0.
-        batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
+        batch_size_manager (Optional[BatchSizeManager]): If not None, a custom class which manages the batch size,
             which provides a getter and setter for the batch size. Default: None.
-        max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
+        max_batch_size (Optional[int]): Upper limit for the batch size so that a batch of size max_batch_size fits
             in the memory. If None or greater than the lenght of the dataset wrapped by the dataloader, max_batch_size
             is set to `len(self.dataloader.dataset)`. Default: None.
         min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
@@ -743,7 +743,7 @@ class PolynomialBS(BSScheduler):
     """
 
     def __init__(self, dataloader: DataLoader, total_iters: int, power: float = 1.0,
-                 batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
+                 batch_size_manager: Optional[BatchSizeManager] = None, max_batch_size: Optional[int] = None,
                  min_batch_size: int = 1, verbose: bool = False):
         assert isinstance(total_iters, int) and total_iters > 1
 
@@ -773,11 +773,11 @@ class CosineAnnealingBS(BSScheduler):
     Args:
         dataloader (DataLoader): Wrapped dataloader.
         total_iters (int): The number of steps that the scheduler increases the batch size.
-        base_batch_size (Union[int, None]): The base batch size. If None, the base batch size will be retrieved from
+        base_batch_size (Optional[int]): The base batch size. If None, the base batch size will be retrieved from
             the dataloader. Default: None.
-        batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
+        batch_size_manager (Optional[BatchSizeManager]): If not None, a custom class which manages the batch size,
             which provides a getter and setter for the batch size. Default: None.
-        max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
+        max_batch_size (Optional[int]): Upper limit for the batch size so that a batch of size max_batch_size fits
             in the memory. If None or greater than the lenght of the dataset wrapped by the dataloader, max_batch_size
             is set to `len(self.dataloader.dataset)`. Default: None.
         min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
@@ -805,8 +805,8 @@ class CosineAnnealingBS(BSScheduler):
         >>>     scheduler.step()
     """
 
-    def __init__(self, dataloader: DataLoader, total_iters: int, base_batch_size: Union[int, None] = None,
-                 batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
+    def __init__(self, dataloader: DataLoader, total_iters: int, base_batch_size: Optional[int] = None,
+                 batch_size_manager: Optional[BatchSizeManager] = None, max_batch_size: Optional[int] = None,
                  min_batch_size: int = 1, verbose: bool = False):
         assert isinstance(total_iters, int) and total_iters > 1
         assert base_batch_size is None or (isinstance(base_batch_size, int) and base_batch_size >= min_batch_size)
@@ -970,9 +970,9 @@ class IncreaseBSOnPlateau(BSScheduler):
             mode or best - threshold in `min` mode. Default: 'rel'.
         cooldown (int): Number of epochs to wait before resuming normal operation after the batch size has been reduced.
             Default: 0.
-        batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
+        batch_size_manager (Optional[BatchSizeManager]): If not None, a custom class which manages the batch size,
             which provides a getter and setter for the batch size. Default: None.
-        max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
+        max_batch_size (Optional[int]): Upper limit for the batch size so that a batch of size max_batch_size fits
             in the memory. If None or greater than the lenght of the dataset wrapped by the dataloader, max_batch_size
             is set to `len(self.dataloader.dataset)`. Default: None.
         min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
@@ -989,7 +989,7 @@ class IncreaseBSOnPlateau(BSScheduler):
 
     def __init__(self, dataloader: DataLoader, mode: str = 'min', factor: float = 2.0, patience: int = 10,
                  threshold: float = 1e-4, threshold_mode: str = 'rel', cooldown: int = 0,
-                 batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
+                 batch_size_manager: Optional[BatchSizeManager] = None, max_batch_size: Optional[int] = None,
                  min_batch_size: int = 1, verbose: bool = False):
         super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
         assert isinstance(factor, (int, float)) and factor != 1.0 and factor >= 0.0
@@ -1122,22 +1122,22 @@ class CyclicBS(BSScheduler):
 
     Args:
         dataloader (DataLoader): Wrapped dataloader.
-        base_batch_size (Union[int, None]): Initial batch size which is the lower boundery in the cycle. If None, the
+        base_batch_size (Optional[int]): Initial batch size which is the lower boundery in the cycle. If None, the
             base batch size will be retrieved from the dataloader. Default: None.
         step_size_down (int): Number of training iterations in the decreasing half of a cycle. Default: 2000.
-        step_size_up (Union[int, None]): Number of training iterations in the increasing half of a cycle. If
+        step_size_up (Optional[int]): Number of training iterations in the increasing half of a cycle. If
             step_size_down is None, it is set to step_size_down. Default: None.
         mode (str): One of `triangular`, `triangular2`, `exp_range`. Values correspond to the policies detailed above.
             If scale_fn is not None, this argument is ignored. Default: 'triangular'.
         gamma (float): Constant in the 'exp_range' scaling function: gamma ** (cycle iterations). Default: 1.0.
-        scale_fn (Union[Callable[[int], float], None]): Custom scaling policy defined by a single argument lambda
+        scale_fn (Optional[Callable[[int], float]]): Custom scaling policy defined by a single argument lambda
             function, where 0 <= scale_fn(x) <= 1 for all x >= 0. If specified, then 'mode' is ignored. Default: None.
         scale_mode (str): One of `cycle`, `iterations`. Defines whether scale_fn is evaluated on cycle number of cycle
             iterations (training iterations since the start of the cycle). When scale_fn is None, scale_mode is
             automatically set to 'iterations' if mode is 'exp_range' and 'cycle' otherwhise. Default: 'cycle'.
-        batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
+        batch_size_manager (Optional[BatchSizeManager]): If not None, a custom class which manages the batch size,
             which provides a getter and setter for the batch size. Default: None.
-        max_batch_size (Union[int, None]): Upper batch size boundary in the cycle. Functionally, it defines the cycle
+        max_batch_size (Optional[int]): Upper batch size boundary in the cycle. Functionally, it defines the cycle
             amplitude (upper_batch_size_bound - base_batch_size). The batch size at any cycle is the sum of
             base_batch_size and some scaling of the amplitude; therefore, upper_batch_size_bound may not actually be
             reached depending on scaling function. If None or greater than the lenght of the dataset wrapped by the
@@ -1158,10 +1158,10 @@ class CyclicBS(BSScheduler):
     .. _bckenstler/CLR: https://github.com/bckenstler/CLR
     """
 
-    def __init__(self, dataloader: DataLoader, base_batch_size: Union[int, None] = None,
-                 step_size_down: int = 2000, step_size_up: Union[int, None] = None, mode: str = 'triangular',
-                 gamma: float = 1.0, scale_fn: Union[Callable[[int], float], None] = None, scale_mode: str = 'cycle',
-                 batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
+    def __init__(self, dataloader: DataLoader, base_batch_size: Optional[int] = None,
+                 step_size_down: int = 2000, step_size_up: Optional[int] = None, mode: str = 'triangular',
+                 gamma: float = 1.0, scale_fn: Optional[Callable[[int], float]] = None, scale_mode: str = 'cycle',
+                 batch_size_manager: Optional[BatchSizeManager] = None, max_batch_size: Optional[int] = None,
                  min_batch_size: int = 1, verbose: bool = False):
         assert base_batch_size is None or (isinstance(base_batch_size, int) and base_batch_size >= min_batch_size)
         assert isinstance(step_size_down, int) and step_size_down > 0
@@ -1180,11 +1180,11 @@ class CyclicBS(BSScheduler):
         self.step_ratio: float = step_size_down / self.total_size
         self.gamma: float = float(gamma)
 
-        self._scale_fn_custom: Union[Callable[[int], float], None] = scale_fn
+        self._scale_fn_custom: Optional[Callable[[int], float]] = scale_fn
         self.scale_mode: str = scale_mode
         self._init_scale_fn()
 
-        self.base_batch_size: Union[int, None] = base_batch_size
+        self.base_batch_size: Optional[int] = base_batch_size
         super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
         self.base_batch_size: int = self.dataloader._base_batch_size if base_batch_size is None else base_batch_size
         assert self.min_batch_size < self.base_batch_size
@@ -1270,12 +1270,12 @@ class CosineAnnealingBSWithWarmRestarts(BSScheduler):
     Args:
         dataloader (DataLoader): Wrapped dataloader.
         t_0 (int): The number of iterations for the first restart is t_0 + 1.
-        base_batch_size (Union[int, None]): The base batch size. If None, the base batch size will be retrieved from
+        base_batch_size (Optional[int]): The base batch size. If None, the base batch size will be retrieved from
             the dataloader. Default: None.
         factor (int): The factor with which :math:`t_{i}` is increased after a restart. Default: 1.
-        batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
+        batch_size_manager (Optional[BatchSizeManager]): If not None, a custom class which manages the batch size,
             which provides a getter and setter for the batch size. Default: None.
-        max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
+        max_batch_size (Optional[int]): Upper limit for the batch size so that a batch of size max_batch_size fits
             in the memory. If None or greater than the lenght of the dataset wrapped by the dataloader, max_batch_size
             is set to `len(self.dataloader.dataset)`. Default: None.
         min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
@@ -1299,8 +1299,8 @@ class CosineAnnealingBSWithWarmRestarts(BSScheduler):
         >>>         scheduler.step()
     """
 
-    def __init__(self, dataloader: DataLoader, t_0: int, base_batch_size: Union[int, None] = None, factor: int = 1,
-                 batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
+    def __init__(self, dataloader: DataLoader, t_0: int, base_batch_size: Optional[int] = None, factor: int = 1,
+                 batch_size_manager: Optional[BatchSizeManager] = None, max_batch_size: Optional[int] = None,
                  min_batch_size: int = 1, verbose: bool = False):
         assert isinstance(t_0, int) and t_0 > 0
         assert isinstance(factor, int) and factor > 0
@@ -1354,13 +1354,13 @@ class OneCycleBS(BSScheduler):
         total_steps (int): The total number of steps in the cycle.
         decay_percentage (float): The fraction of the cycle spend decreasing the batch size. 1 - decay_percentage will
             be spent increasing the batch size. Default: 0.3.
-        base_batch_size (Union[int, None]): The base batch size. If None, the base batch size will be retrieved from
+        base_batch_size (Optional[int]): The base batch size. If None, the base batch size will be retrieved from
             the dataloader. Default: None.
         strategy (str): One of `cos`, `linear`. Specifies the strategy used for annealing the batch size, 'cos' for
             cosine annealing, 'linear' for linear annealing. Default: 'cos'.
-        batch_size_manager (Union[BatchSizeManager, None]): If not None, a custom class which manages the batch size,
+        batch_size_manager (Optional[BatchSizeManager]): If not None, a custom class which manages the batch size,
             which provides a getter and setter for the batch size. Default: None.
-        max_batch_size (Union[int, None]): Upper limit for the batch size so that a batch of size max_batch_size fits
+        max_batch_size (Optional[int]): Upper limit for the batch size so that a batch of size max_batch_size fits
             in the memory. If None or greater than the lenght of the dataset wrapped by the dataloader, max_batch_size
             is set to `len(self.dataloader.dataset)`. Default: None.
         min_batch_size (int): Lower limit for the batch size which must be greater than 0. Default: 1.
@@ -1379,8 +1379,8 @@ class OneCycleBS(BSScheduler):
     """
 
     def __init__(self, dataloader: DataLoader, total_steps: int, decay_percentage: float = 0.3,
-                 base_batch_size: Union[int, None] = None, strategy: str = 'cos',
-                 batch_size_manager: Union[BatchSizeManager, None] = None, max_batch_size: Union[int, None] = None,
+                 base_batch_size: Optional[int] = None, strategy: str = 'cos',
+                 batch_size_manager: Optional[BatchSizeManager] = None, max_batch_size: Optional[int] = None,
                  min_batch_size: int = 1, verbose: bool = False):
         assert isinstance(total_steps, int)
         assert isinstance(decay_percentage, float) and 0 < decay_percentage < 1
