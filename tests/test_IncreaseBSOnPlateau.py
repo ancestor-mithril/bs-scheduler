@@ -55,7 +55,7 @@ class TestIncreaseBSOnPlateau(BSTest):
 
         self.reloading_scheduler(scheduler)
         self.torch_save_and_load(scheduler)
-        scheduler.step(metric=10)
+        scheduler.step(metrics=10)
         self.assertEqual(scheduler.mode, mode)
         self.assertEqual(scheduler.threshold_mode, threshold_mode)
 
