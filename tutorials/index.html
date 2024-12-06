@@ -268,6 +268,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#integrating-bs-scheduler-with-already-batched-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      Integrating bs-scheduler with already batched data
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -304,6 +313,15 @@
   <a href="#basic-usage" class="md-nav__link">
     <span class="md-ellipsis">
       Basic usage
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#integrating-bs-scheduler-with-already-batched-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      Integrating bs-scheduler with already batched data
     </span>
   </a>
   
@@ -437,6 +455,64 @@ def main():
 
 if __name__ == &quot;__main__&quot;:
     main()
+</code></pre>
+<h2 id="integrating-bs-scheduler-with-already-batched-data">Integrating bs-scheduler with already batched data</h2>
+<p>Using already batched data disables the automated batching features of the PyTorch DataLoaders.
+In this case, a <code>BatchSizeManager</code> must be implemented by the end user to enable Batch Size Schedulers to change the batch size.
+The <code>CustomBatchSizeManager</code> can be used when the dataset class implements the <code>get_batch_size</code> and <code>change_batch_size</code> 
+methods, similar to the example below:</p>
+<pre><code class="language-python">from bs_scheduler import StepBS
+from bs_scheduler.batch_size_schedulers import CustomBatchSizeManager
+from torch import Tensor
+import torch
+from torch.utils.data import Dataset, DataLoader
+
+
+
+class BatchedDataset(Dataset):
+    def __init__(self, data: Tensor, batch_size: int):
+        self.data = data
+        self.batch_size = batch_size
+
+    def __len__(self) -&gt; int:
+        return len(self.data) // self.batch_size
+
+    def __getitem__(self, i: int) -&gt; Tensor:
+        return self.data[i * self.batch_size: (i + 1) * self.batch_size]
+
+    def get_batch_size(self) -&gt; int:
+        return self.batch_size
+
+    def change_batch_size(self, batch_size: int):
+        self.batch_size = batch_size
+
+
+dataset = BatchedDataset(torch.rand(10000, 128), batch_size=100)
+dataloader = DataLoader(dataset, batch_size=None)
+scheduler = StepBS(dataloader,
+                   step_size=2,
+                   gamma=2.0,
+                   batch_size_manager=CustomBatchSizeManager(dataset),
+                   max_batch_size=10000)
+
+
+for epoch in range(10):
+    for batched_data in dataloader:
+        pass
+    print(f&quot;There are {len(dataloader)} batches in epoch {epoch}.&quot;)
+    scheduler.step()
+</code></pre>
+<p>Output:</p>
+<pre><code>There are 100 batches in epoch 0.
+There are 100 batches in epoch 1.
+There are 50 batches in epoch 2.
+There are 50 batches in epoch 3.
+There are 25 batches in epoch 4.
+There are 25 batches in epoch 5.
+There are 12 batches in epoch 6.
+There are 12 batches in epoch 7.
+There are 6 batches in epoch 8.
+There are 6 batches in epoch 9.
 </code></pre>
 
 
