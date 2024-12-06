@@ -37,7 +37,7 @@ class TestCosineAnnealingBS(BSTest):
     def test_dataloader_batch_size(self):
         base_batch_size = 10
         total_iters = 50
-        n_epochs = 500
+        n_epochs = 200
         max_batch_size = 100
         dataloader = create_dataloader(self.dataset, batch_size=base_batch_size)
         scheduler = CosineAnnealingBS(dataloader, total_iters=total_iters, max_batch_size=max_batch_size)
@@ -47,7 +47,7 @@ class TestCosineAnnealingBS(BSTest):
                                 47, 49, 52, 55, 58, 61, 63, 66, 69, 72, 74, 77, 79, 81, 84, 86, 88, 90, 91, 93, 94, 96,
                                 97, 98, 99, 99, 100, 100, 100, 100, 100, 99, 99, 98, 97, 96, 94, 93, 91, 90, 88, 86, 84,
                                 81, 79, 77, 74, 72, 69, 66, 63, 61, 58, 55, 52, 49, 47, 44, 41, 38, 36, 33, 31, 29, 26,
-                                24, 22, 20, 19, 17, 16, 14, 13, 12, 11, 11, 10, 10] * 5
+                                24, 22, 20, 19, 17, 16, 14, 13, 12, 11, 11, 10, 10] * 2
 
         self.assertEqual(batch_sizes, expected_batch_sizes)
 

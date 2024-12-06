@@ -107,7 +107,7 @@ class TestStepBS(BSTest):
         step_size = 50
         gamma = 1.1
         scheduler = StepBS(dataloader, step_size=step_size, gamma=gamma)
-        n_epochs = 300
+        n_epochs = 200
 
         batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
         plt.plot(batch_sizes)

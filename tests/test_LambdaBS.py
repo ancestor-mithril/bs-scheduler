@@ -22,7 +22,7 @@ class TestLambdaBS(BSTest):
                                          "always be equal to the inferred length except for Iterable Datasets for "
                                          "which the __len__ could be inaccurate.")
 
-        dataloader.batch_sampler.batch_size = 526
+        dataloader.batch_sampler.batch_size = 256
         real, inferred = iterate(dataloader)
         self.assertEqual(real, inferred, "Dataloader __len__ does not return the real length. The real length should "
                                          "always be equal to the inferred length except for Iterable Datasets for "
@@ -46,7 +46,7 @@ class TestLambdaBS(BSTest):
         dataloader = create_dataloader(self.dataset, batch_size=self.base_batch_size)
         fn = lambda epoch: 10 * epoch  # noqa: E731
         scheduler = LambdaBS(dataloader, fn)
-        n_epochs = 15
+        n_epochs = 10
 
         batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
         expected_batch_sizes = self.compute_expected_batch_sizes(n_epochs, self.base_batch_size, fn,

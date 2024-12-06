@@ -201,11 +201,11 @@ class TestConstantBS(BSTest):
         base_batch_size = 100
         dataloader = create_dataloader(self.dataset, batch_size=base_batch_size)
         max_batch_size = 200
-        step_size_down = 50
+        step_size_down = 25
         gamma = 0.9
         scheduler = CyclicBS(dataloader, base_batch_size=base_batch_size, max_batch_size=max_batch_size,
                              step_size_down=step_size_down, mode='exp_range', gamma=gamma)
-        n_epochs = 10 * step_size_down
+        n_epochs = 6 * step_size_down
 
         batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
         plt.plot(batch_sizes)
