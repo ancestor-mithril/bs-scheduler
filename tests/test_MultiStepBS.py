@@ -1,15 +1,24 @@
 import os
 import unittest
 
-from bs_scheduler import MultiStepBS
+from bs_scheduler import MultiStepBS, CustomBatchSizeManager
 from tests.test_utils import create_dataloader, simulate_n_epochs, fashion_mnist, \
-    get_batch_sizes_across_epochs, BSTest, clip, rint
+    get_batch_sizes_across_epochs, BSTest, clip, rint, batched_dataset
 
 
 class TestMultiStepBS(BSTest):
     def setUp(self):
         self.base_batch_size = 64
         self.dataset = fashion_mnist()
+
+    def test_create(self):
+        dataloader = create_dataloader(batched_dataset(batch_size=self.base_batch_size), batch_size=None)
+        kwargs = {
+            'gamma': 1.1,
+            'milestones': [70, 70, 80, 10, 50]
+        }
+        batch_size_manager = CustomBatchSizeManager(dataloader.dataset)
+        self.create_scheduler(dataloader, MultiStepBS, batch_size_manager, **kwargs)
 
     @staticmethod
     def compute_expected_batch_sizes(epochs, base_batch_size, milestones, gamma, min_batch_size, max_batch_size):

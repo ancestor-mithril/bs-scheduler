@@ -3,15 +3,25 @@ import unittest
 
 import torch
 
-from bs_scheduler import LinearBS
+from bs_scheduler import LinearBS, CustomBatchSizeManager
 from tests.test_utils import create_dataloader, simulate_n_epochs, fashion_mnist, \
-    get_batch_sizes_across_epochs, BSTest, clip, rint
+    get_batch_sizes_across_epochs, BSTest, clip, rint, batched_dataset
 
 
 class TestLinearBS(BSTest):
     def setUp(self):
         self.base_batch_size = 64
         self.dataset = fashion_mnist()
+
+    def test_create(self):
+        dataloader = create_dataloader(batched_dataset(batch_size=self.base_batch_size), batch_size=None)
+        kwargs = {
+            'start_factor': 10.0,
+            'end_factor': 5.0,
+            'milestone': 5
+        }
+        batch_size_manager = CustomBatchSizeManager(dataloader.dataset)
+        self.create_scheduler(dataloader, LinearBS, batch_size_manager, **kwargs)
 
     @staticmethod
     def compute_expected_batch_sizes(epochs, base_batch_size, start_factor, end_factor, milestone, min_batch_size,
