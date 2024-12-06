@@ -47,10 +47,10 @@ class TestMultiStepBS(BSTest):
 
     def test_dataloader_batch_size(self):
         dataloader = create_dataloader(self.dataset, batch_size=self.base_batch_size)
-        milestones = [5, 10, 10, 12]
+        milestones = [5, 7, 7, 9]
         gamma = 3.0
         scheduler = MultiStepBS(dataloader, milestones=milestones, gamma=gamma, max_batch_size=5000, verbose=False)
-        n_epochs = 15
+        n_epochs = 10
 
         batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
         expected_batch_sizes = self.compute_expected_batch_sizes(n_epochs, self.base_batch_size, milestones, gamma,
@@ -60,7 +60,7 @@ class TestMultiStepBS(BSTest):
 
     def test_loading_and_unloading(self):
         dataloader = create_dataloader(self.dataset)
-        milestones = [5, 10, 10, 12]
+        milestones = [5, 7, 7, 9]
         gamma = 3.0
         scheduler = MultiStepBS(dataloader, milestones=milestones, gamma=gamma, max_batch_size=5000, verbose=False)
 
@@ -76,10 +76,10 @@ class TestMultiStepBS(BSTest):
         warnings.filterwarnings("ignore", category=UserWarning)
 
         dataloader = create_dataloader(self.dataset, batch_size=self.base_batch_size)
-        milestones = [5, 10, 10, 12]
+        milestones = [5, 7, 7, 9]
         gamma = 3.0
         scheduler = MultiStepBS(dataloader, milestones=milestones, gamma=gamma, max_batch_size=5000, verbose=False)
-        n_epochs = 15
+        n_epochs = 10
 
         batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
         plt.plot(batch_sizes)

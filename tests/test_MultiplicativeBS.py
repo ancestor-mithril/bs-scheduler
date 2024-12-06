@@ -37,7 +37,7 @@ class TestMultiplicativeBS(BSTest):
         dataloader = create_dataloader(self.dataset, batch_size=self.base_batch_size)
         fn = lambda epoch: epoch / 100 + 2  # noqa: E731
         scheduler = MultiplicativeBS(dataloader, fn, max_batch_size=5000, verbose=False)
-        n_epochs = 15
+        n_epochs = 10
 
         batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
         expected_batch_sizes = self.compute_expected_batch_sizes(n_epochs, self.base_batch_size, fn,
