@@ -1,15 +1,24 @@
 import os
 import unittest
 
-from bs_scheduler import ConstantBS
+from bs_scheduler import ConstantBS, CustomBatchSizeManager
 from tests.test_utils import create_dataloader, simulate_n_epochs, fashion_mnist, \
-    get_batch_sizes_across_epochs, BSTest, rint
+    get_batch_sizes_across_epochs, BSTest, rint, batched_dataset
 
 
 class TestConstantBS(BSTest):
     def setUp(self):
         self.base_batch_size = 64
         self.dataset = fashion_mnist()
+
+    def test_create(self):
+        dataloader = create_dataloader(batched_dataset(batch_size=self.base_batch_size), batch_size=None)
+        kwargs = {
+            'factor': 5.0,
+            'milestone': 5
+        }
+        batch_size_manager = CustomBatchSizeManager(dataloader.dataset)
+        self.create_scheduler(dataloader, ConstantBS, batch_size_manager, **kwargs)
 
     def test_dataloader_lengths(self):
         dataloader = create_dataloader(self.dataset, batch_size=self.base_batch_size)

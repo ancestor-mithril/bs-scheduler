@@ -1,15 +1,24 @@
 import os
 import unittest
 
-from bs_scheduler import PolynomialBS
+from bs_scheduler import PolynomialBS, CustomBatchSizeManager
 from tests.test_utils import create_dataloader, simulate_n_epochs, fashion_mnist, \
-    get_batch_sizes_across_epochs, BSTest
+    get_batch_sizes_across_epochs, BSTest, batched_dataset
 
 
 class TestPolynomialBS(BSTest):
     def setUp(self):
         self.base_batch_size = 64
         self.dataset = fashion_mnist()
+
+    def test_create(self):
+        dataloader = create_dataloader(batched_dataset(batch_size=self.base_batch_size), batch_size=None)
+        kwargs = {
+            'total_iters': 5,
+            'power': 1.0,
+        }
+        batch_size_manager = CustomBatchSizeManager(dataloader.dataset)
+        self.create_scheduler(dataloader, PolynomialBS, batch_size_manager, **kwargs)
 
     def test_dataloader_lengths(self):
         base_batch_size = 10

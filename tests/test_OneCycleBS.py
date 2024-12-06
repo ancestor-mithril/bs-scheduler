@@ -1,15 +1,27 @@
 import os
 import unittest
 
-from bs_scheduler import OneCycleBS
+from bs_scheduler import OneCycleBS, CustomBatchSizeManager
 from tests.test_utils import create_dataloader, fashion_mnist, \
-    get_batch_sizes_across_epochs, BSTest, rint
+    get_batch_sizes_across_epochs, BSTest, rint, batched_dataset
 
 
 class TestOneCycleBS(BSTest):
     def setUp(self):
         self.base_batch_size = 64
         self.dataset = fashion_mnist()
+
+    def test_create(self):
+        dataloader = create_dataloader(batched_dataset(batch_size=self.base_batch_size), batch_size=None)
+        kwargs = {
+            'max_batch_size': 100,
+            'min_batch_size': 10,
+            'total_steps': 100,
+            'decay_percentage': 0.3,
+            'strategy': 'linear',
+        }
+        batch_size_manager = CustomBatchSizeManager(dataloader.dataset)
+        self.create_scheduler(dataloader, OneCycleBS, batch_size_manager, **kwargs)
 
     def test_dataloader_batch_size_linear(self):
         base_batch_size = 40

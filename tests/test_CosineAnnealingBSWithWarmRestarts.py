@@ -1,15 +1,24 @@
 import os
 import unittest
 
-from bs_scheduler import CosineAnnealingBSWithWarmRestarts
+from bs_scheduler import CosineAnnealingBSWithWarmRestarts, CustomBatchSizeManager
 from tests.test_utils import create_dataloader, simulate_n_epochs, fashion_mnist, \
-    get_batch_sizes_across_epochs, BSTest
+    get_batch_sizes_across_epochs, BSTest, batched_dataset
 
 
 class TestCosineAnnealingBS(BSTest):
     def setUp(self):
         self.base_batch_size = 64
         self.dataset = fashion_mnist()
+
+    def test_create(self):
+        dataloader = create_dataloader(batched_dataset(batch_size=self.base_batch_size), batch_size=None)
+        kwargs = {
+            't_0': 5,
+            'max_batch_size': 100,
+        }
+        batch_size_manager = CustomBatchSizeManager(dataloader.dataset)
+        self.create_scheduler(dataloader, CosineAnnealingBSWithWarmRestarts, batch_size_manager, **kwargs)
 
     def test_dataloader_lengths(self):
         base_batch_size = 10

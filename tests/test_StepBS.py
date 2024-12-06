@@ -1,15 +1,25 @@
 import os
 import unittest
 
-from bs_scheduler import StepBS
+from bs_scheduler import StepBS, CustomBatchSizeManager
 from tests.test_utils import create_dataloader, simulate_n_epochs, fashion_mnist, \
-    get_batch_sizes_across_epochs, BSTest, clip, rint
+    get_batch_sizes_across_epochs, BSTest, clip, rint, batched_dataset
 
 
 class TestStepBS(BSTest):
     def setUp(self):
         self.base_batch_size = 64
         self.dataset = fashion_mnist()
+
+    def test_create(self):
+        dataloader = create_dataloader(batched_dataset(batch_size=self.base_batch_size), batch_size=None)
+        kwargs = {
+            'step_size': 50,
+            'gamma': 1.1
+        }
+        batch_size_manager = CustomBatchSizeManager(dataloader.dataset)
+        self.create_scheduler(dataloader, StepBS, batch_size_manager, **kwargs)
+
 
     @staticmethod
     def compute_expected_batch_sizes(epochs, base_batch_size, step_size, gamma, min_batch_size, max_batch_size):
@@ -23,6 +33,14 @@ class TestStepBS(BSTest):
         expected_batch_sizes.pop(0)  # Removing base batch size.
         return expected_batch_sizes
 
+    def run_scheduler(self, dataloader, scheduler, n_epochs):
+        batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
+        expected_batch_sizes = self.compute_expected_batch_sizes(n_epochs, self.base_batch_size, scheduler.step_size,
+                                                                 scheduler.gamma, scheduler.min_batch_size,
+                                                                 scheduler.max_batch_size)
+
+        self.assertEqual(batch_sizes, expected_batch_sizes)
+
     def test_dataloader_lengths(self):
         dataloader = create_dataloader(self.dataset, batch_size=self.base_batch_size)
         step_size = 50
@@ -31,8 +49,9 @@ class TestStepBS(BSTest):
         n_epochs = 300
 
         epoch_lengths = simulate_n_epochs(dataloader, scheduler, n_epochs)
-        expected_batch_sizes = self.compute_expected_batch_sizes(n_epochs, self.base_batch_size, step_size, gamma,
-                                                                 scheduler.min_batch_size, scheduler.max_batch_size)
+        expected_batch_sizes = self.compute_expected_batch_sizes(n_epochs, self.base_batch_size, scheduler.step_size,
+                                                                 scheduler.gamma, scheduler.min_batch_size,
+                                                                 scheduler.max_batch_size)
         expected_lengths = self.compute_epoch_lengths(expected_batch_sizes, len(self.dataset), drop_last=False)
 
         self.assertEqual(epoch_lengths, expected_lengths)
@@ -43,12 +62,29 @@ class TestStepBS(BSTest):
         gamma = 3.0
         scheduler = StepBS(dataloader, step_size=step_size, gamma=gamma, max_batch_size=5000, verbose=False)
         n_epochs = 15
+        self.run_scheduler(dataloader, scheduler, n_epochs)
 
-        batch_sizes = get_batch_sizes_across_epochs(dataloader, scheduler, n_epochs)
-        expected_batch_sizes = self.compute_expected_batch_sizes(n_epochs, self.base_batch_size, step_size, gamma,
-                                                                 scheduler.min_batch_size, scheduler.max_batch_size)
+    def test_batched_dataset(self):
+        dataloader = create_dataloader(batched_dataset(batch_size=self.base_batch_size), batch_size=None)
+        batch_size_manager = CustomBatchSizeManager(dataloader.dataset)
+        step_size = 2
+        gamma = 2.0
+        n_epochs = 10
 
-        self.assertEqual(batch_sizes, expected_batch_sizes)
+        scheduler = StepBS(dataloader, step_size=step_size, gamma=gamma, max_batch_size=5000, verbose=False,
+                           batch_size_manager=batch_size_manager)
+        self.run_scheduler(dataloader, scheduler, n_epochs)
+
+    def test_dataloader_none(self):
+        dataloader = create_dataloader(batched_dataset(batch_size=self.base_batch_size), batch_size=None)
+        batch_size_manager = CustomBatchSizeManager(dataloader.dataset)
+        step_size = 2
+        gamma = 2.0
+        n_epochs = 10
+
+        scheduler = StepBS(None, step_size=step_size, gamma=gamma, max_batch_size=5000, verbose=False,
+                           batch_size_manager=batch_size_manager)
+        self.run_scheduler(dataloader, scheduler, n_epochs)
 
     def test_loading_and_unloading(self):
         dataloader = create_dataloader(self.dataset)

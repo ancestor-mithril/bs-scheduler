@@ -2,13 +2,37 @@ import math
 import os
 import tempfile
 import unittest
+from sched import scheduler
 
 import torch
-from torch.utils.data import DataLoader
+from torch import Tensor
+from torch.utils.data import DataLoader, Dataset
 from torchvision import datasets
 from torchvision.transforms import ToTensor
 
 from bs_scheduler import BSScheduler
+
+
+class BatchedDataset(Dataset):
+    def __init__(self, data: Tensor, batch_size: int):
+        self.data = data
+        self.batch_size = batch_size
+
+    def __len__(self) -> int:
+        return len(self.data) // self.batch_size
+
+    def __getitem__(self, i: int) -> Tensor:
+        return self.data[i * self.batch_size: (i + 1) * self.batch_size]
+
+    def get_batch_size(self) -> int:
+        return self.batch_size
+
+    def change_batch_size(self, batch_size: int):
+        self.batch_size = batch_size
+
+
+def batched_dataset(size: int = 5000, batch_size: int = 100):
+    return BatchedDataset(torch.rand(size, 128), batch_size=batch_size)
 
 
 def fashion_mnist():
@@ -110,3 +134,10 @@ class BSTest(unittest.TestCase):
             os.unlink(tmp.name)
 
         scheduler.load_state_dict(state_dict)
+
+    def create_scheduler(self, dataloader, scheduler_class, batch_size_manager, **kwargs):
+        scheduler_class(dataloader, **kwargs)
+        with self.assertRaises(AssertionError):
+            scheduler_class(None, **kwargs)
+        scheduler_class(None, batch_size_manager=batch_size_manager, **kwargs)
+        scheduler_class(dataloader, batch_size_manager=batch_size_manager, **kwargs)

@@ -1,15 +1,24 @@
 import os
 import unittest
 
-from bs_scheduler import IncreaseBSOnPlateau
+from bs_scheduler import IncreaseBSOnPlateau, CustomBatchSizeManager
 from tests.test_utils import create_dataloader, simulate_n_epochs, fashion_mnist, \
-    BSTest, get_batch_sizes_across_epochs
+    BSTest, get_batch_sizes_across_epochs, batched_dataset
 
 
 class TestIncreaseBSOnPlateau(BSTest):
     def setUp(self):
         self.base_batch_size = 64
         self.dataset = fashion_mnist()
+
+    def test_create(self):
+        dataloader = create_dataloader(batched_dataset(batch_size=self.base_batch_size), batch_size=None)
+        kwargs = {
+            'mode': 'min',
+            'threshold_mode': 'rel',
+        }
+        batch_size_manager = CustomBatchSizeManager(dataloader.dataset)
+        self.create_scheduler(dataloader, IncreaseBSOnPlateau, batch_size_manager, **kwargs)
 
     def test_constant_metric(self):
         base_batch_size = 10
