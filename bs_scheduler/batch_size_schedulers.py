@@ -19,17 +19,10 @@ from .utils import check_isinstance, clip, rint
 
 
 class BSScheduler:
-    def __init__(self, dataloader: DataLoader, batch_size_manager: Optional[BatchSizeManager],
+    def __init__(self, dataloader: Optional[DataLoader], batch_size_manager: Optional[BatchSizeManager],
                  max_batch_size: Optional[int], min_batch_size: int, verbose: bool):
-        try:
-            # Should we allow our users to use us with dataloader == None and just use the batch size managers they
-            # provide us with?
-            check_isinstance(dataloader, DataLoader)
-        except TypeError:
-            print("Parameter dataloader is not a DataLoader. If you really need this feature, please open an issue at "
-                  "https://github.com/ancestor-mithril/bs-scheduler/issues and describe your use case.")
-            raise
-        self.dataloader: DataLoader = dataloader
+        dataloader is None or check_isinstance(dataloader, DataLoader)
+        self.dataloader: Optional[DataLoader] = dataloader
         self.verbose: bool = verbose
 
         assert max_batch_size is None or isinstance(max_batch_size, int)
@@ -52,6 +45,7 @@ class BSScheduler:
         self.min_batch_size: int = min_batch_size
 
         if batch_size_manager is None:
+            assert self.dataloader is not None, "batch_size_manager must be provided if dataloader is None"
             if self.dataloader.batch_sampler is not None:
                 batch_size_manager = DefaultBatchSizeManager(self.dataloader)
             else:
@@ -63,9 +57,9 @@ class BSScheduler:
         self.batch_size_manager: BatchSizeManager = batch_size_manager
 
         self.last_epoch: int = -1
-        if not hasattr(self.dataloader, '_base_batch_size'):
-            self.dataloader._base_batch_size = self.batch_size
-        self._last_bs: int = self.dataloader._base_batch_size
+        if not hasattr(self.batch_size_manager, '_base_batch_size'):
+            self.batch_size_manager._base_batch_size = self.batch_size
+        self._last_bs: int = self.batch_size_manager._base_batch_size
         self._finished: bool = False
 
         self._init_get_new_bs()
@@ -100,7 +94,7 @@ class BSScheduler:
         Args:
             new_bs (int): The new batch sizes that needs to be set.
         """
-        if self.dataloader.batch_size is not None:
+        if self.dataloader is not None and self.dataloader.batch_size is not None:
             # We can't directly do `dataloader.batch_size = new_bs` because the dataloader raises an error if we change
             # the batch size after initialization. But we are still hacking around it.
             self.dataloader.__dict__['batch_size'] = new_bs
@@ -169,7 +163,7 @@ class LambdaBS(BSScheduler):
     there is a single batch size for a given dataloader so only one function should be passed as a parameter.
 
     Args:
-        dataloader (DataLoader): Wrapped dataloader.
+        dataloader (Optional[Dataloader]): Wrapped dataloader.
         bs_lambda (Callable[[int], float]): A function which computes a multiplicative factor given an integer
             parameter epoch.
         batch_size_manager (Optional[BatchSizeManager]): If not None, a custom class which manages the batch size,
@@ -190,7 +184,7 @@ class LambdaBS(BSScheduler):
         >>>     scheduler.step()
     """
 
-    def __init__(self, dataloader: DataLoader, bs_lambda: Callable[[int], float],
+    def __init__(self, dataloader: Optional[DataLoader], bs_lambda: Callable[[int], float],
                  batch_size_manager: Optional[BatchSizeManager] = None, max_batch_size: Optional[int] = None,
                  min_batch_size: int = 1, verbose: bool = False):
         assert callable(bs_lambda)
@@ -224,7 +218,7 @@ class LambdaBS(BSScheduler):
         """ Returns the next batch size as an :class:`int`. It is calculated as the initial value of the batch size
         times the factor returned by `bs_lambda`.
         """
-        return rint(self.dataloader._base_batch_size * self.bs_lambda(self.last_epoch))
+        return rint(self.batch_size_manager._base_batch_size * self.bs_lambda(self.last_epoch))
 
 
 class MultiplicativeBS(BSScheduler):
@@ -233,7 +227,7 @@ class MultiplicativeBS(BSScheduler):
     should be passed as a parameter.
 
     Args:
-        dataloader (DataLoader): Wrapped dataloader.
+        dataloader (Optional[Dataloader]): Wrapped dataloader.
         bs_lambda (Callable[[int], float]): A function which computes a multiplicative factor given an integer
             parameter epoch.
         batch_size_manager (Optional[BatchSizeManager]): If not None, a custom class which manages the batch size,
@@ -254,7 +248,7 @@ class MultiplicativeBS(BSScheduler):
         >>>     scheduler.step()
     """
 
-    def __init__(self, dataloader: DataLoader, bs_lambda: Callable[[int], float],
+    def __init__(self, dataloader: Optional[DataLoader], bs_lambda: Callable[[int], float],
                  batch_size_manager: Optional[BatchSizeManager] = None, max_batch_size: Optional[int] = None,
                  min_batch_size: int = 1, verbose: bool = False):
         assert callable(bs_lambda)
@@ -295,7 +289,7 @@ class StepBS(BSScheduler):
     """ Multiplies the batch size by gamma every step_size epochs.
 
     Args:
-        dataloader (DataLoader): Wrapped dataloader.
+        dataloader (Optional[Dataloader]): Wrapped dataloader.
         step_size (int): Period of batch size growth.
         gamma (float): Multiplicative factor of batch size growth. Default: 2.0.
         batch_size_manager (Optional[BatchSizeManager]): If not None, a custom class which manages the batch size,
@@ -320,7 +314,7 @@ class StepBS(BSScheduler):
         >>>     scheduler.step()
     """
 
-    def __init__(self, dataloader: DataLoader, step_size: int, gamma: float = 2.0,
+    def __init__(self, dataloader: Optional[DataLoader], step_size: int, gamma: float = 2.0,
                  batch_size_manager: Optional[BatchSizeManager] = None, max_batch_size: Optional[int] = None,
                  min_batch_size: int = 1, verbose: bool = False):
         assert isinstance(step_size, int) and step_size > 0
@@ -343,7 +337,7 @@ class MultiStepBS(BSScheduler):
     """ Multiplies the batch size by gamma once the number of epochs reaches one of the milestones.
 
     Args:
-        dataloader (DataLoader): Wrapped dataloader.
+        dataloader (Optional[Dataloader]): Wrapped dataloader.
         milestones (Sequence[int]): Sequence of epoch indices.
         batch_size_manager (Optional[BatchSizeManager]): If not None, a custom class which manages the batch size,
             which provides a getter and setter for the batch size. Default: None.
@@ -366,7 +360,7 @@ class MultiStepBS(BSScheduler):
         >>>     scheduler.step()
     """
 
-    def __init__(self, dataloader: DataLoader, milestones: Sequence[int], gamma: float = 2.0,
+    def __init__(self, dataloader: Optional[DataLoader], milestones: Sequence[int], gamma: float = 2.0,
                  batch_size_manager: Optional[BatchSizeManager] = None, max_batch_size: Optional[int] = None,
                  min_batch_size: int = 1, verbose: bool = False):
         assert isinstance(milestones, (tuple, list))
@@ -406,7 +400,7 @@ class ConstantBS(BSScheduler):
     automatically such that the batch size remains within bounds.
 
     Args:
-        dataloader (DataLoader): Wrapped dataloader.
+        dataloader (Optional[Dataloader]): Wrapped dataloader.
         factor (float): The number we multiply the batch size until the milestone.
         milestone (int): The number of steps that the scheduler increases the learning rate. Default: 5.
         batch_size_manager (Optional[BatchSizeManager]): If not None, a custom class which manages the batch size,
@@ -431,7 +425,7 @@ class ConstantBS(BSScheduler):
         >>>     scheduler.step()
     """
 
-    def __init__(self, dataloader: DataLoader, factor: float, milestone: int = 5,
+    def __init__(self, dataloader: Optional[DataLoader], factor: float, milestone: int = 5,
                  batch_size_manager: Optional[BatchSizeManager] = None, max_batch_size: Optional[int] = None,
                  min_batch_size: int = 1, verbose: bool = False):
         assert isinstance(milestone, int) and milestone > 0
@@ -468,7 +462,7 @@ class LinearBS(BSScheduler):
     a pre-defined milestone.
 
     Args:
-        dataloader (DataLoader): Wrapped dataloader.
+        dataloader (Optional[Dataloader]): Wrapped dataloader.
         start_factor (float): The number we multiply the batch size in the first epoch. The multiplication factor
             changes towards end_factor in the following epochs. Default: 3.0.
         end_factor (float): The number we multiply the batch size at the end of the linear changing process.
@@ -498,7 +492,8 @@ class LinearBS(BSScheduler):
         >>>     scheduler.step()
     """
 
-    def __init__(self, dataloader: DataLoader, start_factor: float = 3.0, end_factor: float = 1.0, milestone: int = 5,
+    def __init__(self, dataloader: Optional[DataLoader], start_factor: float = 3.0, end_factor: float = 1.0,
+                 milestone: int = 5,
                  batch_size_manager: Optional[BatchSizeManager] = None, max_batch_size: Optional[int] = None,
                  min_batch_size: int = 1, verbose: bool = False):
         assert isinstance(milestone, int) and milestone > 0
@@ -531,7 +526,7 @@ class ExponentialBS(BSScheduler):
     """ Increases the batch size by a gamma every epoch.
 
     Args:
-        dataloader (DataLoader): Wrapped dataloader.
+        dataloader (Optional[Dataloader]): Wrapped dataloader.
         gamma (float): Multiplicative factor of batch size growth.
         batch_size_manager (Optional[BatchSizeManager]): If not None, a custom class which manages the batch size,
             which provides a getter and setter for the batch size. Default: None.
@@ -556,7 +551,8 @@ class ExponentialBS(BSScheduler):
         >>>     scheduler.step()
     """
 
-    def __init__(self, dataloader: DataLoader, gamma: float, batch_size_manager: Optional[BatchSizeManager] = None,
+    def __init__(self, dataloader: Optional[DataLoader], gamma: float,
+                 batch_size_manager: Optional[BatchSizeManager] = None,
                  max_batch_size: Optional[int] = None, min_batch_size: int = 1, verbose: bool = False):
         assert gamma > 0.0
         # Gamma is expected to be greater than 1.0 for batch size growth. It can be lower than 1.0 for batch size decay.
@@ -641,10 +637,10 @@ class SequentialBS(BSScheduler):
                 self.min_batch_size = schedulers[i].min_batch_size
 
             # Undoing the steps done by the schedulers.
-            schedulers[i]._last_bs = self.dataloader._base_batch_size
+            schedulers[i]._last_bs = self.batch_size_manager._base_batch_size
             schedulers[i].last_epoch -= 1
 
-        self.set_batch_size(self.dataloader._base_batch_size)  # Set the batch size back to initial value.
+        self.set_batch_size(self.batch_size_manager._base_batch_size)  # Set the batch size back to initial value.
 
         self.schedulers: Tuple[BSScheduler, ...] = tuple(schedulers)
         self.milestones: Tuple[int, ...] = tuple(milestones)
@@ -716,7 +712,7 @@ class PolynomialBS(BSScheduler):
     polynomial factor decays from 1.5 ** power to 1.0.
 
     Args:
-        dataloader (DataLoader): Wrapped dataloader.
+        dataloader (Optional[Dataloader]): Wrapped dataloader.
         total_iters (int): The number of steps that the scheduler increases the batch size.
         power (float): The power of the polynomial. Default: 1.0.
         batch_size_manager (Optional[BatchSizeManager]): If not None, a custom class which manages the batch size,
@@ -743,7 +739,7 @@ class PolynomialBS(BSScheduler):
         >>>     scheduler.step()
     """
 
-    def __init__(self, dataloader: DataLoader, total_iters: int, power: float = 1.0,
+    def __init__(self, dataloader: Optional[DataLoader], total_iters: int, power: float = 1.0,
                  batch_size_manager: Optional[BatchSizeManager] = None, max_batch_size: Optional[int] = None,
                  min_batch_size: int = 1, verbose: bool = False):
         assert isinstance(total_iters, int) and total_iters > 1
@@ -772,7 +768,7 @@ class CosineAnnealingBS(BSScheduler):
     of decreasing the batch size to min_batch_size we increase it to max_batch_size.
 
     Args:
-        dataloader (DataLoader): Wrapped dataloader.
+        dataloader (Optional[Dataloader]): Wrapped dataloader.
         total_iters (int): The number of steps that the scheduler increases the batch size.
         base_batch_size (Optional[int]): The base batch size. If None, the base batch size will be retrieved from
             the dataloader. Default: None.
@@ -806,7 +802,7 @@ class CosineAnnealingBS(BSScheduler):
         >>>     scheduler.step()
     """
 
-    def __init__(self, dataloader: DataLoader, total_iters: int, base_batch_size: Optional[int] = None,
+    def __init__(self, dataloader: Optional[DataLoader], total_iters: int, base_batch_size: Optional[int] = None,
                  batch_size_manager: Optional[BatchSizeManager] = None, max_batch_size: Optional[int] = None,
                  min_batch_size: int = 1, verbose: bool = False):
         assert isinstance(total_iters, int) and total_iters > 1
@@ -814,7 +810,7 @@ class CosineAnnealingBS(BSScheduler):
 
         self.total_iters: int = total_iters
         super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
-        self.base_batch_size: int = self.dataloader._base_batch_size if base_batch_size is None else base_batch_size
+        self.base_batch_size: int = self.batch_size_manager._base_batch_size if base_batch_size is None else base_batch_size
         assert self.max_batch_size > self.base_batch_size
         self._float_batch_size: float = self.base_batch_size
 
@@ -875,7 +871,7 @@ class ChainedBSScheduler(BSScheduler):
         assert isinstance(schedulers, (tuple, list)) and len(schedulers) > 1 and all(
             [isinstance(x, BSScheduler) for x in schedulers])
 
-        dataloader: DataLoader = schedulers[0].dataloader
+        dataloader: Optional[DataLoader] = schedulers[0].dataloader
         batch_size_manger: BatchSizeManager = schedulers[0].batch_size_manager
         for i in range(1, len(schedulers)):
             if schedulers[i].dataloader != dataloader:
@@ -889,7 +885,7 @@ class ChainedBSScheduler(BSScheduler):
                     f"{type(schedulers[i].batch_size_manager).__name__}.")
             # We do not require equality for min_batch_size and max_batch_size, but maybe we should.
 
-        self.dataloader: DataLoader = dataloader
+        self.dataloader: Optional[DataLoader] = dataloader
         self.batch_size_manager: BatchSizeManager = batch_size_manger
         self.schedulers: Tuple[BSScheduler, ...] = tuple(schedulers)
         self._last_bs: int = self.schedulers[-1].last_bs
@@ -957,7 +953,7 @@ class IncreaseBSOnPlateau(BSScheduler):
     The step() function needs to receive the metric value using the `metrics` keyword argument.
 
     Args:
-        dataloader (DataLoader): Wrapped dataloader.
+        dataloader (Optional[Dataloader]): Wrapped dataloader.
         mode (str): One of `min`, `max`. In `min` mode, the batch size will be increased when the metric value has
             stopped decreasing; in `max` mode, the batch size will be increased when the metric value has stopped
             increasing. Default: 'min'.
@@ -987,7 +983,7 @@ class IncreaseBSOnPlateau(BSScheduler):
         >>>     scheduler.step(metric=val_loss)
     """
 
-    def __init__(self, dataloader: DataLoader, mode: str = 'min', factor: float = 2.0, patience: int = 10,
+    def __init__(self, dataloader: Optional[DataLoader], mode: str = 'min', factor: float = 2.0, patience: int = 10,
                  threshold: float = 1e-4, threshold_mode: str = 'rel', cooldown: int = 0,
                  batch_size_manager: Optional[BatchSizeManager] = None, max_batch_size: Optional[int] = None,
                  min_batch_size: int = 1, verbose: bool = False):
@@ -1121,7 +1117,7 @@ class CyclicBS(BSScheduler):
     This implementation was adapted from `pytorch/pytorch`_ which was adapted from the github repo: `bckenstler/CLR`_.
 
     Args:
-        dataloader (DataLoader): Wrapped dataloader.
+        dataloader (Optional[Dataloader]): Wrapped dataloader.
         base_batch_size (Optional[int]): Initial batch size which is the lower boundery in the cycle. If None, the
             base batch size will be retrieved from the dataloader. Default: None.
         step_size_down (int): Number of training iterations in the decreasing half of a cycle. Default: 2000.
@@ -1158,7 +1154,7 @@ class CyclicBS(BSScheduler):
     .. _bckenstler/CLR: https://github.com/bckenstler/CLR
     """
 
-    def __init__(self, dataloader: DataLoader, base_batch_size: Optional[int] = None,
+    def __init__(self, dataloader: Optional[DataLoader], base_batch_size: Optional[int] = None,
                  step_size_down: int = 2000, step_size_up: Optional[int] = None, mode: str = 'triangular',
                  gamma: float = 1.0, scale_fn: Optional[Callable[[int], float]] = None, scale_mode: str = 'cycle',
                  batch_size_manager: Optional[BatchSizeManager] = None, max_batch_size: Optional[int] = None,
@@ -1186,7 +1182,7 @@ class CyclicBS(BSScheduler):
 
         self.base_batch_size: Optional[int] = base_batch_size
         super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
-        self.base_batch_size: int = self.dataloader._base_batch_size if base_batch_size is None else base_batch_size
+        self.base_batch_size: int = self.batch_size_manager._base_batch_size if base_batch_size is None else base_batch_size
         assert self.min_batch_size < self.base_batch_size
 
     def _init_scale_fn(self):
@@ -1268,7 +1264,7 @@ class CosineAnnealingBSWithWarmRestarts(BSScheduler):
     This scheduler can be used after every batch.
 
     Args:
-        dataloader (DataLoader): Wrapped dataloader.
+        dataloader (Optional[Dataloader]): Wrapped dataloader.
         t_0 (int): The number of iterations for the first restart is t_0 + 1.
         base_batch_size (Optional[int]): The base batch size. If None, the base batch size will be retrieved from
             the dataloader. Default: None.
@@ -1299,7 +1295,8 @@ class CosineAnnealingBSWithWarmRestarts(BSScheduler):
         >>>         scheduler.step()
     """
 
-    def __init__(self, dataloader: DataLoader, t_0: int, base_batch_size: Optional[int] = None, factor: int = 1,
+    def __init__(self, dataloader: Optional[DataLoader], t_0: int, base_batch_size: Optional[int] = None,
+                 factor: int = 1,
                  batch_size_manager: Optional[BatchSizeManager] = None, max_batch_size: Optional[int] = None,
                  min_batch_size: int = 1, verbose: bool = False):
         assert isinstance(t_0, int) and t_0 > 0
@@ -1311,7 +1308,7 @@ class CosineAnnealingBSWithWarmRestarts(BSScheduler):
         self.t_cur: int = 0
         self.factor: int = factor
         super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
-        self.base_batch_size: int = self.dataloader._base_batch_size if base_batch_size is None else base_batch_size
+        self.base_batch_size: int = self.batch_size_manager._base_batch_size if base_batch_size is None else base_batch_size
         assert self.max_batch_size > self.base_batch_size
 
     def get_new_bs(self) -> int:
@@ -1350,7 +1347,7 @@ class OneCycleBS(BSScheduler):
     This scheduler is not chainable.
 
     Args:
-        dataloader (DataLoader): Wrapped dataloader.
+        dataloader (Optional[Dataloader]): Wrapped dataloader.
         total_steps (int): The total number of steps in the cycle.
         decay_percentage (float): The fraction of the cycle spend decreasing the batch size. 1 - decay_percentage will
             be spent increasing the batch size. Default: 0.3.
@@ -1378,7 +1375,7 @@ class OneCycleBS(BSScheduler):
         https://arxiv.org/abs/1708.07120
     """
 
-    def __init__(self, dataloader: DataLoader, total_steps: int, decay_percentage: float = 0.3,
+    def __init__(self, dataloader: Optional[DataLoader], total_steps: int, decay_percentage: float = 0.3,
                  base_batch_size: Optional[int] = None, strategy: str = 'cos',
                  batch_size_manager: Optional[BatchSizeManager] = None, max_batch_size: Optional[int] = None,
                  min_batch_size: int = 1, verbose: bool = False):
@@ -1398,7 +1395,7 @@ class OneCycleBS(BSScheduler):
             self.anneal_fn = self._annealing_linear
 
         super().__init__(dataloader, batch_size_manager, max_batch_size, min_batch_size, verbose)
-        self.base_batch_size: int = self.dataloader._base_batch_size if base_batch_size is None else base_batch_size
+        self.base_batch_size: int = self.batch_size_manager._base_batch_size if base_batch_size is None else base_batch_size
         assert self.max_batch_size > self.base_batch_size
 
     @staticmethod
