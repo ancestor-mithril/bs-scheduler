@@ -128,7 +128,7 @@ class BSTest(unittest.TestCase):
         tmp = tempfile.NamedTemporaryFile(delete=False)
         try:
             torch.save(state_dict, tmp.name)
-            state_dict = torch.load(tmp.name)
+            state_dict = torch.load(tmp.name, weights_only=False)
         finally:
             tmp.close()
             os.unlink(tmp.name)
