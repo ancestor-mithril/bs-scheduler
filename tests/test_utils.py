@@ -2,7 +2,6 @@ import math
 import os
 import tempfile
 import unittest
-from sched import scheduler
 
 import torch
 from torch import Tensor

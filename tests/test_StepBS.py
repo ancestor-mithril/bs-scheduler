@@ -20,7 +20,6 @@ class TestStepBS(BSTest):
         batch_size_manager = CustomBatchSizeManager(dataloader.dataset)
         self.create_scheduler(dataloader, StepBS, batch_size_manager, **kwargs)
 
-
     @staticmethod
     def compute_expected_batch_sizes(epochs, base_batch_size, step_size, gamma, min_batch_size, max_batch_size):
         expected_batch_sizes = [base_batch_size]  # Base batch size is added as a boundary condition.
