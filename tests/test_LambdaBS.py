@@ -1,14 +1,14 @@
 import unittest
 
 from bs_scheduler import LambdaBS
-from tests.test_utils import create_dataloader, iterate, simulate_n_epochs, fashion_mnist, \
+from tests.test_utils import create_dataloader, iterate, simulate_n_epochs, create_dataset, \
     get_batch_sizes_across_epochs, BSTest, clip, rint
 
 
 class TestLambdaBS(BSTest):
     def setUp(self):
         self.base_batch_size = 64
-        self.dataset = fashion_mnist()
+        self.dataset = create_dataset()
         # TODO: Test lambda with argument.
 
     @staticmethod

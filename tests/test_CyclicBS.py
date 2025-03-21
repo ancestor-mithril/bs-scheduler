@@ -3,14 +3,14 @@ import random
 import unittest
 
 from bs_scheduler import CyclicBS, CustomBatchSizeManager
-from tests.test_utils import create_dataloader, fashion_mnist, get_batch_sizes_across_epochs, BSTest, rint, \
+from tests.test_utils import create_dataloader, create_dataset, get_batch_sizes_across_epochs, BSTest, rint, \
     batched_dataset
 
 
 class TestConstantBS(BSTest):
     def setUp(self):
         self.base_batch_size = 64
-        self.dataset = fashion_mnist()
+        self.dataset = create_dataset()
 
     def test_create(self):
         dataloader = create_dataloader(batched_dataset(batch_size=self.base_batch_size), batch_size=None)
