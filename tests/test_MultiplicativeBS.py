@@ -1,14 +1,14 @@
 import unittest
 
 from bs_scheduler import MultiplicativeBS
-from tests.test_utils import create_dataloader, simulate_n_epochs, fashion_mnist, \
+from tests.test_utils import create_dataloader, simulate_n_epochs, create_dataset, \
     get_batch_sizes_across_epochs, BSTest, clip, rint
 
 
 class TestMultiplicativeBS(BSTest):
     def setUp(self):
         self.base_batch_size = 64
-        self.dataset = fashion_mnist()
+        self.dataset = create_dataset()
 
     @staticmethod
     def compute_expected_batch_sizes(epochs, base_batch_size, fn, min_batch_size, max_batch_size):

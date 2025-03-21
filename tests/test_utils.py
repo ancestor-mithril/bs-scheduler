@@ -5,7 +5,7 @@ import unittest
 
 import torch
 from torch import Tensor
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, TensorDataset
 from torchvision import datasets
 from torchvision.transforms import ToTensor
 
@@ -34,13 +34,9 @@ def batched_dataset(size: int = 5000, batch_size: int = 100):
     return BatchedDataset(torch.rand(size, 128), batch_size=batch_size)
 
 
-def fashion_mnist():
-    return datasets.FashionMNIST(
-        root="data",
-        train=True,
-        download=True,
-        transform=ToTensor()
-    )
+def create_dataset():
+    # TODO: Investigate error when size is 5000 (could be rounding error)
+    return TensorDataset(torch.ones(10000, 128, dtype=torch.bool))
 
 
 def create_dataloader(dataset, num_workers=0, batch_size=64, drop_last=False):

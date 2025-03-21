@@ -2,14 +2,14 @@ import os
 import unittest
 
 from bs_scheduler import ChainedBSScheduler, ConstantBS, ExponentialBS
-from tests.test_utils import create_dataloader, simulate_n_epochs, fashion_mnist, \
+from tests.test_utils import create_dataloader, simulate_n_epochs, create_dataset, \
     get_batch_sizes_across_epochs, BSTest
 
 
 class TestChainedBSScheduler(BSTest):
     def setUp(self):
         self.base_batch_size = 64
-        self.dataset = fashion_mnist()
+        self.dataset = create_dataset()
         # TODO: Test more combinations of batch size schedulers.
 
     def test_dataloader_lengths(self):

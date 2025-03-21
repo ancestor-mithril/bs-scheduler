@@ -2,14 +2,14 @@ import os
 import unittest
 
 from bs_scheduler import ExponentialBS, CustomBatchSizeManager
-from tests.test_utils import create_dataloader, simulate_n_epochs, fashion_mnist, \
+from tests.test_utils import create_dataloader, simulate_n_epochs, create_dataset, \
     get_batch_sizes_across_epochs, BSTest, batched_dataset
 
 
 class TestExponentialBS(BSTest):
     def setUp(self):
         self.base_batch_size = 64
-        self.dataset = fashion_mnist()
+        self.dataset = create_dataset()
 
     def test_create(self):
         dataloader = create_dataloader(batched_dataset(batch_size=self.base_batch_size), batch_size=None)
