@@ -9,10 +9,8 @@
       
       
       
-        <link rel="prev" href="../reference/">
+        <link rel="prev" href="../tutorials/">
       
-      
-        <link rel="next" href="../plots/">
       
       
       <link rel="icon" href="../assets/images/favicon.png">
@@ -20,7 +18,7 @@
     
     
       
-        <title>Tutorials - BS Scheduler</title>
+        <title>Schedule Visuals - BS Scheduler</title>
       
     
     
@@ -64,7 +62,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#basic-usage" class="md-skip">
+        <a href="#batch-size-policies-vs-learning-rate-policies" class="md-skip">
           Skip to content
         </a>
       
@@ -100,7 +98,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Tutorials
+              Schedule Visuals
             
           </span>
         </div>
@@ -217,6 +215,26 @@
       
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Tutorials
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
     
   
   
@@ -231,7 +249,7 @@
           
   
   <span class="md-ellipsis">
-    Tutorials
+    Schedule Visuals
   </span>
   
 
@@ -242,7 +260,7 @@
         
   
   <span class="md-ellipsis">
-    Tutorials
+    Schedule Visuals
   </span>
   
 
@@ -262,20 +280,116 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#basic-usage" class="md-nav__link">
+  <a href="#batch-size-policies-vs-learning-rate-policies" class="md-nav__link">
     <span class="md-ellipsis">
-      Basic usage
+      Batch size policies vs Learning rate policies
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Batch size policies vs Learning rate policies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#integrating-bs-scheduler-with-already-batched-data" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#multistep" class="md-nav__link">
     <span class="md-ellipsis">
-      Integrating bs-scheduler with already batched data
+      MultiStep
     </span>
   </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#constant" class="md-nav__link">
+    <span class="md-ellipsis">
+      Constant
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#linear" class="md-nav__link">
+    <span class="md-ellipsis">
+      Linear
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exponential" class="md-nav__link">
+    <span class="md-ellipsis">
+      Exponential
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#polynomial" class="md-nav__link">
+    <span class="md-ellipsis">
+      Polynomial
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cosineannealing" class="md-nav__link">
+    <span class="md-ellipsis">
+      CosineAnnealing
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#plateau" class="md-nav__link">
+    <span class="md-ellipsis">
+      Plateau
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cyclic" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cyclic
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cosineannealingwarmrestarts" class="md-nav__link">
+    <span class="md-ellipsis">
+      CosineAnnealingWarmRestarts
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#onecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      OneCycle
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -283,26 +397,6 @@
   
 </nav>
       
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../plots/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Schedule Visuals
-  </span>
-  
-
-      </a>
     </li>
   
 
@@ -332,20 +426,116 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#basic-usage" class="md-nav__link">
+  <a href="#batch-size-policies-vs-learning-rate-policies" class="md-nav__link">
     <span class="md-ellipsis">
-      Basic usage
+      Batch size policies vs Learning rate policies
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Batch size policies vs Learning rate policies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#integrating-bs-scheduler-with-already-batched-data" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#multistep" class="md-nav__link">
     <span class="md-ellipsis">
-      Integrating bs-scheduler with already batched data
+      MultiStep
     </span>
   </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#constant" class="md-nav__link">
+    <span class="md-ellipsis">
+      Constant
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#linear" class="md-nav__link">
+    <span class="md-ellipsis">
+      Linear
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exponential" class="md-nav__link">
+    <span class="md-ellipsis">
+      Exponential
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#polynomial" class="md-nav__link">
+    <span class="md-ellipsis">
+      Polynomial
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cosineannealing" class="md-nav__link">
+    <span class="md-ellipsis">
+      CosineAnnealing
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#plateau" class="md-nav__link">
+    <span class="md-ellipsis">
+      Plateau
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cyclic" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cyclic
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cosineannealingwarmrestarts" class="md-nav__link">
+    <span class="md-ellipsis">
+      CosineAnnealingWarmRestarts
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#onecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      OneCycle
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -367,175 +557,95 @@
   
 
 
-  <h1>Tutorials</h1>
+  <h1>Schedule Visuals</h1>
 
-<h2 id="basic-usage">Basic usage</h2>
-<p>Integrating a Batch Size Scheduler inside a PyTorch training script is simple:</p>
-<pre><code class="language-python">from torch.utils.data import DataLoader
-from bs_scheduler import StepBS
-# We use StepBS in this example, but we can use any BS Scheduler
-
-# Define the Dataset and the DataLoader
-dataset = ...
-dataloader = DataLoader(dataset, batch_size=16)
-scheduler = StepBS(dataloader, step_size=30, gamma=2)
-# Activates every 30 epochs and doubles the batch size.
-
-for _ in range(100):
-    train(...)
-    validate(...)
-    scheduler.step()
-
-# We expect the batch size to have the following values:
-# epoch 0 - 29: 16
-# epoch 30 - 59: 32
-# epoch 60 - 89: 64
-# epoch 90 - 99: 128
+<h2 id="batch-size-policies-vs-learning-rate-policies">Batch size policies vs Learning rate policies</h2>
+<h3 id="step">Step</h3>
+<pre><code>scheduler_bs = StepBS(dataloader, step_size=4, gamma=2)
+scheduler_lr = StepLR(optimizer, step_size=4, gamma=1.0 / 2)
 </code></pre>
-<p>Full example:</p>
-<pre><code class="language-python">import timm
-import torch.cuda
-import torchvision.datasets
-from torch import nn
-from torch.optim import SGD
-from torch.utils.data import DataLoader
-from torchvision.transforms import v2
-
-from bs_scheduler import StepBS
-
-device = torch.device(&quot;cuda&quot; if torch.cuda.is_available() else &quot;cpu&quot;)
-
-transforms = v2.Compose([v2.ToImage(), v2.ToDtype(torch.float32, scale=True)])
-train_loader = DataLoader(
-    torchvision.datasets.CIFAR10(
-        root=&quot;../data&quot;,
-        train=True,
-        download=True,
-        transform=transforms,
-    ),
-    batch_size=100,
-)
-val_loader = DataLoader(
-    torchvision.datasets.CIFAR10(root=&quot;../data&quot;, train=False, transform=transforms),
-    batch_size=500,
-)
-scheduler = StepBS(train_loader, step_size=10)
-
-model = timm.create_model(&quot;hf_hub:grodino/resnet18_cifar10&quot;, pretrained=False).to(
-    device
-)
-criterion = nn.CrossEntropyLoss()
-optimizer = SGD(model.parameters(), lr=0.001)
-
-
-def train():
-    correct = 0
-    total = 0
-
-    model.train()
-    for inputs, targets in train_loader:
-        inputs, targets = inputs.to(device), targets.to(device)
-        outputs = model(inputs)
-        loss = criterion(outputs, targets)
-        loss.backward()
-        optimizer.step()
-        optimizer.zero_grad()
-
-        predicted = outputs.argmax(1)
-        total += targets.size(0)
-        correct += predicted.eq(targets).sum().item()
-
-    return correct / total
-
-
-@torch.inference_mode()
-def val():
-    correct = 0
-    total = 0
-
-    model.eval()
-    for inputs, targets in val_loader:
-        inputs, targets = inputs.to(device), targets.to(device)
-        outputs = model(inputs)
-
-        predicted = outputs.argmax(1)
-        total += targets.size(0)
-        correct += predicted.eq(targets).sum().item()
-
-    return correct / total
-
-
-def main():
-    for epoch in range(100):
-        train_accuracy = train()
-        val_accuracy = val()
-
-        scheduler.step()
-
-        print(train_accuracy, val_accuracy)
-
-
-if __name__ == &quot;__main__&quot;:
-    main()
+<p><img alt="StepBS(4, 2) vs StepLR(4, 0.50)" src="Step_1.png" /></p>
+<pre><code>scheduler_bs = StepBS(dataloader, step_size=20, gamma=3)
+scheduler_lr = StepLR(optimizer, step_size=20, gamma=1.0 / 3)
 </code></pre>
-<h2 id="integrating-bs-scheduler-with-already-batched-data">Integrating bs-scheduler with already batched data</h2>
-<p>Using already batched data disables the automated batching features of the PyTorch DataLoaders.
-In this case, a <code>BatchSizeManager</code> must be implemented by the end user to enable Batch Size Schedulers to change the batch size.
-The <code>CustomBatchSizeManager</code> can be used when the dataset class implements the <code>get_batch_size</code> and <code>change_batch_size</code> 
-methods, similar to the example below:</p>
-<pre><code class="language-python">from bs_scheduler import StepBS
-from bs_scheduler.batch_size_schedulers import CustomBatchSizeManager
-from torch import Tensor
-import torch
-from torch.utils.data import Dataset, DataLoader
-
-
-
-class BatchedDataset(Dataset):
-    def __init__(self, data: Tensor, batch_size: int):
-        self.data = data
-        self.batch_size = batch_size
-
-    def __len__(self) -&gt; int:
-        return len(self.data) // self.batch_size
-
-    def __getitem__(self, i: int) -&gt; Tensor:
-        return self.data[i * self.batch_size: (i + 1) * self.batch_size]
-
-    def get_batch_size(self) -&gt; int:
-        return self.batch_size
-
-    def change_batch_size(self, batch_size: int):
-        self.batch_size = batch_size
-
-
-dataset = BatchedDataset(torch.rand(10000, 128), batch_size=100)
-dataloader = DataLoader(dataset, batch_size=None)
-scheduler = StepBS(dataloader,
-                   step_size=2,
-                   gamma=2.0,
-                   batch_size_manager=CustomBatchSizeManager(dataset),
-                   max_batch_size=10000)
-
-
-for epoch in range(10):
-    for batched_data in dataloader:
-        pass
-    print(f&quot;There are {len(dataloader)} batches in epoch {epoch}.&quot;)
-    scheduler.step()
+<p><img alt="StepBS(20, 3) vs StepLR(20, 0.33)" src="Step_2.png" /></p>
+<h3 id="multistep">MultiStep</h3>
+<pre><code>scheduler_bs = MultiStepBS(dataloader, milestones=[5, 10, 12, 13], gamma=2)
+scheduler_lr = MultiStepLR(optimizer, milestones=[5, 10, 12, 13], gamma=1.0 / 2)
 </code></pre>
-<p>Output:</p>
-<pre><code>There are 100 batches in epoch 0.
-There are 100 batches in epoch 1.
-There are 50 batches in epoch 2.
-There are 50 batches in epoch 3.
-There are 25 batches in epoch 4.
-There are 25 batches in epoch 5.
-There are 12 batches in epoch 6.
-There are 12 batches in epoch 7.
-There are 6 batches in epoch 8.
-There are 6 batches in epoch 9.
+<p><img alt="MultiStepBS([5, 10, 12, 13], 2) vs MultiStepLR([5, 10, 12, 13], 0.50)" src="MultiStep_1.png" /></p>
+<pre><code>scheduler_bs = MultiStepBS(dataloader, milestones=[15, 40, 40, 50, 80], gamma=1.5)
+scheduler_lr = MultiStepLR(optimizer, milestones=[15, 40, 40, 50, 80], gamma=1.0 / 1.5)
 </code></pre>
+<p><img alt="MultiStepBS([15, 40, 40, 50, 80], 1.5) vs MultiStepLR([15, 40, 40, 50, 80], 0.67)" src="MultiStep_2.png" /></p>
+<h3 id="constant">Constant</h3>
+<pre><code>scheduler_bs = ConstantBS(dataloader, factor=5.0, milestone=5)
+scheduler_lr = ConstantLR(optimizer, factor=1.0 / 5.0, total_iters=5)
+</code></pre>
+<p><img alt="Constant(5.0, 5) vs MultiStepLR(0.20, 5)" src="Constant.png" /></p>
+<h3 id="linear">Linear</h3>
+<pre><code>scheduler_bs = LinearBS(dataloader, start_factor=1.0, end_factor=10.0, milestone=20)
+scheduler_lr = LinearLR(optimizer, start_factor=1.0, end_factor=1.0 / 10.0, total_iters=20)
+</code></pre>
+<p><img alt="LinearBS(1.0, 10.0) vs LinearLR(1.0, 0.10)" src="Linear.png" /></p>
+<h3 id="exponential">Exponential</h3>
+<pre><code>scheduler_bs = ExponentialBS(dataloader, gamma=1.05)
+scheduler_lr = ExponentialLR(optimizer, gamma=1.0 / 1.05)
+</code></pre>
+<p><img alt="ExponentialBS(1.05) vs ExponentialLR(0.95)" src="Exponential.png" /></p>
+<h3 id="polynomial">Polynomial</h3>
+<pre><code>scheduler_bs = PolynomialBS(dataloader, total_iters=50, power=1.5)
+scheduler_lr = PolynomialLR(optimizer, total_iters=50, power=1.5)
+</code></pre>
+<p><img alt="PolynomialBS(1.5) vs PolynomialLR(1.5)" src="Polynomial_1.png" /></p>
+<pre><code>scheduler_bs = PolynomialBS(dataloader, total_iters=50, power=2)
+scheduler_lr = PolynomialLR(optimizer, total_iters=50, power=2)
+</code></pre>
+<p><img alt="PolynomialBS(2) vs PolynomialLR(2)" src="Polynomial_2.png" /></p>
+<h3 id="cosineannealing">CosineAnnealing</h3>
+<pre><code>scheduler_bs = CosineAnnealingBS(dataloader, total_iters=10)
+scheduler_lr = CosineAnnealingLR(optimizer, T_max=10)
+</code></pre>
+<p><img alt="CosineAnnealingBS(10) vs CosineAnnealingLR(10)" src="CosineAnnealing.png" /></p>
+<h3 id="plateau">Plateau</h3>
+<pre><code>scheduler_bs = IncreaseBSOnPlateau(dataloader, factor=2.0)
+scheduler_lr = ReduceLROnPlateau(optimizer, factor=1.0 / 2.0)
+</code></pre>
+<p><img alt="IncreaseBSOnPlateau(2.0) vs ReduceLROnPlateau(0.50)" src="Plateau.png" /></p>
+<h3 id="cyclic">Cyclic</h3>
+<pre><code>scheduler_bs = CyclicBS(dataloader, base_batch_size=64, min_batch_size=16, mode=triangular, step_size_down=25)
+scheduler_lr = CyclicLR(optimizer, base_lr=0.001, max_lr=0.01, mode=triangular, step_size_up=25)
+</code></pre>
+<p><img alt="CyclicBS(triangular) vs CyclicLR(triangular)" src="Cyclic_1.png" /></p>
+<pre><code>scheduler_bs = CyclicBS(dataloader, base_batch_size=64, min_batch_size=16, mode=triangular2, step_size_down=25)
+scheduler_lr = CyclicLR(optimizer, base_lr=0.001, max_lr=0.01, mode=triangular2, step_size_up=25)
+</code></pre>
+<p><img alt="CyclicBS(triangular2) vs CyclicLR(triangular2)" src="Cyclic_2.png" /></p>
+<pre><code>scheduler_bs = CyclicBS(dataloader, base_batch_size=64, min_batch_size=16, mode=exp_range, step_size_down=25, gamma=0.8)
+scheduler_lr = CyclicLR(optimizer, base_lr=0.001, max_lr=0.01, mode=exp_range, step_size_up=25, gamma=0.8)
+</code></pre>
+<p><img alt="CyclicBS(exp_range, 0.8) vs CyclicLR(exp_range, 0.8)" src="Cyclic_3.png" /></p>
+<h3 id="cosineannealingwarmrestarts">CosineAnnealingWarmRestarts</h3>
+<pre><code>scheduler_bs = CosineAnnealingBSWithWarmRestarts(dataloader, t_0=40, factor=1)
+scheduler_lr = CosineAnnealingWarmRestarts(optimizer, T_0=40, T_mult=1)
+</code></pre>
+<p><img alt="CosineAnnealingBSWithWarmRestarts(40, 1) vs CosineAnnealingWarmRestarts(40, 1)" src="CosineAnnnealingWarmRestarts_1.png" /></p>
+<pre><code>scheduler_bs = CosineAnnealingBSWithWarmRestarts(dataloader, t_0=30, factor=2)
+scheduler_lr = CosineAnnealingWarmRestarts(optimizer, T_0=30, T_mult=2)
+</code></pre>
+<p><img alt="CosineAnnealingBSWithWarmRestarts(30, 2) vs CosineAnnealingWarmRestarts(30, 2)" src="CosineAnnnealingWarmRestarts_2.png" /></p>
+<h3 id="onecycle">OneCycle</h3>
+<pre><code>```
+scheduler_bs = OneCycleBS(dataloader, total_steps=100, decay_percentage=0.3, strategy=cos, max_batch_size=64, min_batch_size=16)
+scheduler_lr = OneCycleLR(optimizer, total_steps=100, pct_start=0.3, anneal_strategy=cos, max_lr=0.1, div_factor=2, final_div_factor=2)
+```
+
+![OneCycleBS(cos) vs OneCycleLR(cos)](./plots/OneCycle_1.png)
+</code></pre>
+<pre><code>scheduler_bs = OneCycleBS(dataloader, total_steps=100, decay_percentage=0.3, strategy=linear, max_batch_size=64, min_batch_size=16)
+scheduler_lr = OneCycleLR(optimizer, total_steps=100, pct_start=0.3, anneal_strategy=linear, max_lr=0.1, div_factor=10, final_div_factor=100)
+</code></pre>
+<p><img alt="OneCycleBS(linear) vs OneCycleLR(linear)" src="OneCycle_2.png" /></p>
 
 
 
