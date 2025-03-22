@@ -123,12 +123,12 @@ scheduler_lr = CosineAnnealingWarmRestarts(optimizer, T_0=30, T_mult=2)
 ![CosineAnnealingBSWithWarmRestarts(30, 2) vs CosineAnnealingWarmRestarts(30, 2)](./plots/CosineAnnnealingWarmRestarts_2.png)
 ### OneCycle
 
-    ```
-    scheduler_bs = OneCycleBS(dataloader, total_steps=100, decay_percentage=0.3, strategy=cos, max_batch_size=64, min_batch_size=16)
-    scheduler_lr = OneCycleLR(optimizer, total_steps=100, pct_start=0.3, anneal_strategy=cos, max_lr=0.1, div_factor=2, final_div_factor=2)
-    ```
+```
+scheduler_bs = OneCycleBS(dataloader, total_steps=100, decay_percentage=0.3, strategy=cos, max_batch_size=64, min_batch_size=16)
+scheduler_lr = OneCycleLR(optimizer, total_steps=100, pct_start=0.3, anneal_strategy=cos, max_lr=0.1, div_factor=2, final_div_factor=2)
+```
 
-    ![OneCycleBS(cos) vs OneCycleLR(cos)](./plots/OneCycle_1.png)
+![OneCycleBS(cos) vs OneCycleLR(cos)](./plots/OneCycle_1.png)
 
 ```
 scheduler_bs = OneCycleBS(dataloader, total_steps=100, decay_percentage=0.3, strategy=linear, max_batch_size=64, min_batch_size=16)

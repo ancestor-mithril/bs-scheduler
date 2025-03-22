@@ -544,11 +544,11 @@ def plot_one_cycle_1(fd):
     strategy = 'cos'
 
     fd.write(f"""
-    ```
-    scheduler_bs = OneCycleBS(dataloader, total_steps={total_steps}, decay_percentage={decay_percentage}, strategy={strategy}, max_batch_size={max_batch_size}, min_batch_size={min_batch_size})
-    scheduler_lr = OneCycleLR(optimizer, total_steps={total_steps}, pct_start={decay_percentage}, anneal_strategy={strategy}, max_lr={max_lr}, div_factor={div_factor}, final_div_factor={final_div_factor})
-    ```\n
-    """)
+```
+scheduler_bs = OneCycleBS(dataloader, total_steps={total_steps}, decay_percentage={decay_percentage}, strategy={strategy}, max_batch_size={max_batch_size}, min_batch_size={min_batch_size})
+scheduler_lr = OneCycleLR(optimizer, total_steps={total_steps}, pct_start={decay_percentage}, anneal_strategy={strategy}, max_lr={max_lr}, div_factor={div_factor}, final_div_factor={final_div_factor})
+```\n
+""")
     scheduler_bs = OneCycleBS(dataloader, total_steps=total_steps, decay_percentage=decay_percentage, strategy=strategy,
                               max_batch_size=max_batch_size, min_batch_size=min_batch_size)
     scheduler_lr = OneCycleLR(optimizer, total_steps=total_steps, pct_start=decay_percentage, anneal_strategy=strategy,
