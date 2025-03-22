@@ -28,3 +28,5 @@ A Batch Size Scheduler library compatible with PyTorch DataLoaders.
 14. [SequentialBS](https://ancestor-mithril.github.io/bs-scheduler/reference/#bs_scheduler.SequentialBS) - calls a list of schedulers sequentially given a list of milestone points which reflect which
     scheduler should be called when.
 15. [ChainedBSScheduler](https://ancestor-mithril.github.io/bs-scheduler/reference/#bs_scheduler.ChainedBSScheduler) - chains a list of batch size schedulers and calls them together each step.
+
+Check the [plots](https://ancestor-mithril.github.io/bs-scheduler/plots) for a visual comparison between Batch Size Schedulers and Learning Rate Schedulers.
