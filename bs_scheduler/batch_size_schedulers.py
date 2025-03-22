@@ -1159,6 +1159,7 @@ class CyclicBS(BSScheduler):
                  gamma: float = 1.0, scale_fn: Optional[Callable[[int], float]] = None, scale_mode: str = 'cycle',
                  batch_size_manager: Optional[BatchSizeManager] = None, max_batch_size: Optional[int] = None,
                  min_batch_size: int = 1, verbose: bool = False):
+        # TODO: Fix explanations for max_batch_size
         assert base_batch_size is None or (isinstance(base_batch_size, int) and base_batch_size >= min_batch_size)
         assert isinstance(step_size_down, int) and step_size_down > 0
         assert step_size_up is None or (isinstance(step_size_up, int) and step_size_up > 0)
