@@ -23,7 +23,8 @@ A Batch Size Scheduler library compatible with PyTorch DataLoaders.
 * However, using a big batch size from the start may lead to a generalization gap.
 * Therefore, the solution is to gradually increase the batch size, similar to a learning rate decay policy.
 * See [Don't Decay the Learning Rate, Increase the Batch Size](https://arxiv.org/abs/1711.00489).
-* See [bs-scheduler: A Batch Size Scheduler library compatible with PyTorch DataLoaders](https://www.sciencedirect.com/science/article/pii/S2352711025001293)
+* See [bs-scheduler: A Batch Size Scheduler library compatible with PyTorch DataLoaders](https://www.sciencedirect.com/science/article/pii/S2352711025001293).
+* See [Increasing the Training Speed with Batch Size Schedulers](https://ieeexplore.ieee.org/abstract/document/11479561).
 
 
 ## Available Schedulers
@@ -86,5 +87,15 @@ The library is licensed under the [BSD-3-Clause license](LICENSE).
   doi = {https://doi.org/10.1016/j.softx.2025.102162},
   url = {https://www.sciencedirect.com/science/article/pii/S2352711025001293},
   author = {George Stoica and Mihaela Elena Breabăn}
+}
+@INPROCEEDINGS{11479561,
+  author={George, Stoica},
+  booktitle={2025 27th International Symposium on Symbolic and Numeric Algorithms for Scientific Computing (SYNASC)}, 
+  title={Increasing the Training Speed with Batch Size Schedulers}, 
+  year={2025},
+  volume={},
+  number={},
+  pages={540-547},
+  doi={10.1109/SYNASC69064.2025.00078}
 }
 ```
